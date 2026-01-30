@@ -6,7 +6,7 @@
 #define SCRATCHCLONE_SDL_SPRITE_H
 
 #include <string>
-#Include <vector>
+#include <vector>
 
 struct Sprite {
     std::string name;

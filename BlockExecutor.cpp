@@ -9,12 +9,13 @@
 const double pi = 3.141592653589;
 
 void executeBlock (const Block &block , Sprite & sprite){
-    switch (blokc.type) {
+    switch (block.type) {
         case BlockType::MOVE:{
+            double steps = 0;
             if(!block.parameters.empty()){
                 steps = block.parameters[0];
             }
-            double rad = spirite.direction * (pi / 180.0)
+            double rad = sprite.direction * (pi / 180.0);
             double dx = steps * std::cos(rad);
             double dy = steps * std::sin(rad);
 
