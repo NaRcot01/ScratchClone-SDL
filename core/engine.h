@@ -1,0 +1,16 @@
+//
+// Created by jack on 1/31/2026.
+//
+
+#pragma once
+#include <SDL2/SDL.h>
+
+struct Engine{
+    bool running;;
+};
+
+
+void engineInit(Engine &engine);
+void engineHandleEvents(Engine &engine);
+void engineUpdate();
+void engineDraw(SDL_Renderer* renderer);
