@@ -13,7 +13,8 @@ enum struct BlockType {
     SAY , SHOW , HIDE ,
     WAIT , REPEAT , IF , FOREVER ,
     END_REPEAT , END_IF ,
-    ON_FLAG_CLICKED , CHANGE_X , CHANGE_Y , SET_SIZE
+    ON_FLAG_CLICKED , CHANGE_X , CHANGE_Y , SET_SIZE ,
+    ELSE,
 };
 
 struct Block {

@@ -8,10 +8,15 @@
 #include <vector>
 #include <iomanip>
 #include <string>
+#include <map>
+#include <thread>
+#include <chrono>
+
+using namespace std;
 
 const double pi = 3.141592653589;
 
-void executeBlock (const Block &block , Sprite & sprite){
+void executeBlock (const Block &block , Sprite & sprite , int &lineNum , map <int , int> &loops){
     switch (block.type) {
         case BlockType::MOVE:{
             double steps = 0;
@@ -77,6 +82,53 @@ void executeBlock (const Block &block , Sprite & sprite){
             }
             break;
         }
+
+        case BlockType::WAIT :{
+            double seconds = block.parameters.empty() ? 1.0 : block.parameters[0];
+            std::this_thread::sleep_for(chrono::milliseconds((int)(seconds * 1000)));
+            break;
+        }
+        case BlockType::IF:{
+            bool condition = false ;
+            if(!block.parameters.empty())
+                condition = (block.parameters[0] != 0);
+
+            if(!condition) {
+                if (block.jumpToIndex != -1) {
+                    lineNum = block.jumpToIndex - 1;
+                }
+            }
+            break;
+        }
+        case BlockType::ELSE:{
+            if (block.jumpToIndex != - 1)
+                lineNum = block.jumpToIndex -1;
+            break;
+        }
+
+        case BlockType::REPEAT:{
+            if(loops.find(lineNum) == loops.end()){
+                int count = block.parameters.empty() ? 10 : (int)block.parameters[0];
+                loops[lineNum] = count;
+            }
+            break;
+        }
+
+        case BlockType::END_REPEAT :{
+            int startLine = block.jumpToIndex;
+            if(loops.find(startLine) != loops.end()){
+                loops[startLine] -- ;
+                if(loops[startLine] > 0){
+                    lineNum = startLine;
+                } else {
+                    loops.erase(startLine);
+                }
+            } else {
+                lineNum = startLine;
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -111,9 +163,43 @@ std::string getBlockName(BlockType type){
             return "UNKNOWN";
     }
 }
-void runScript( const std::vector<Block> &blocks , Sprite &sprite ){
+void preprocessScript(std::vector <Block>& v){
+    std::vector<int > st;
+    for (int i=0 ; i< v.size() ; ++i){
+        BlockType t =v[i].type ;
+        if(t == BlockType::IF || t == BlockType:: REPEAT || t == BlockType:: FOREVER){
+            st.push_back(i);
+        }
+        else if(t == BlockType::ELSE ){
+            if(!st.empty()){
+                int idx = st.back();
+                st.pop_back();
+                v[idx].jumpToIndex = i +1 ;
+                st.push_back(i);
+            }
+        } else if (t == BlockType::END_IF){
+            if(!st.empty()){
+                int idx = st.back();
+                st.pop_back();
+                v[idx].jumpToIndex = i;
+            }
+        } else if (t == BlockType::END_REPEAT){
+            if(!st.empty()){
+                int idx = st.back();
+                st.pop_back();
+                v[i].jumpToIndex = idx;
+                v[idx].jumpToIndex = i;
+            }
+        }
+    }
+}
+
+void runScript( std::vector<Block> &blocks , Sprite &sprite ){
+    preprocessScript(blocks);
     static int cc =0 ; //cycleCounter
     cc++;
+
+    map<int , int > loopCounters;
 
     for(int i=0 ; i<blocks.size() ; ++i){
         const Block& b = blocks[i];
@@ -123,7 +209,7 @@ void runScript( const std::vector<Block> &blocks , Sprite &sprite ){
         double dir1 = sprite.direction;
         bool Vis1 = sprite.isVisible;
 
-        executeBlock(b , sprite);
+        executeBlock(b , sprite , i , loopCounters );
 
         int logline = i +1 ;
         std::string log_cmd = getBlockName(b.type);
