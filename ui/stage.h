@@ -8,5 +8,7 @@ struct Stage{
     SDL_Rect rect;
 };
 
-void drawStage(SDL_Renderer* renderer, const Stage& stage);
+void initStage(Stage* stage);
+void resizeStage(Stage* stage);
+void drawStage(SDL_Renderer* renderer, const Stage* stage);
 bool isInsideStage(int x, int y, Stage& stage);
