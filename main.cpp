@@ -15,6 +15,7 @@ int main(int argc, char* argv[]){
 
     Engine engine;
     engineInit(engine);
+    initBase();
 
     while(engine.running){
         engineHandleEvents(engine);

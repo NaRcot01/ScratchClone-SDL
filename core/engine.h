@@ -9,7 +9,7 @@ struct Engine{
     bool running;;
 };
 
-
+void initBase();
 void engineInit(Engine &engine);
 void engineHandleEvents(Engine &engine);
 void engineUpdate();

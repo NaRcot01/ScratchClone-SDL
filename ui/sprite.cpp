@@ -9,6 +9,10 @@ void initSprite(Sprite& sprite, const Stage* stage){
     sprite.rect.h = stage->rect.h * 0.2;
     sprite.rect.w = stage->rect.w * 0.3;
     sprite.selected = false;
+    sprite.dragging = false;
+    sprite.diff_x_mouse = 0;
+    sprite.diff_y_mouse = 0;
+
 }
 
 void drawSprite(SDL_Renderer* renderer, const Sprite* sprite){
@@ -26,9 +30,16 @@ bool isSpriteClicked(int x, int y, const Sprite* sprite){
     return SDL_PointInRect(&p,&sprite->rect);
 }
 
-void moveSprite(Sprite* sprite, int d_x, int d_y, const Stage* stage){
-    sprite->rect.x += d_x;
-    sprite->rect.y += d_y;
+void moveSprite(Sprite* sprite, int x, int y, const Stage* stage, bool differential){
+    if(differential){
+        sprite->rect.x += x;
+        sprite->rect.y += y;
+    }
+    else{
+        sprite->rect.x = x;
+        sprite->rect.y = y;
+    }
+
 
     if(sprite->rect.x < stage->rect.x){
         sprite->rect.x = stage->rect.x;
