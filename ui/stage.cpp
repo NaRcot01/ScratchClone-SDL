@@ -13,16 +13,16 @@ void drawStage(SDL_Renderer *renderer, const Stage *stage) {
 }
 
 void initStage(Stage *stage) {
-    stage->rect.x = windowConfig.width * 0.4;
+    stage->rect.x = windowConfig.width * 0.65;
     stage->rect.y = windowConfig.height * 0.04;
-    stage->rect.w = windowConfig.width * 0.6;
+    stage->rect.w = windowConfig.width * 0.35;
     stage->rect.h = windowConfig.height * 0.96;
 }
 
 void resizeStage(Stage *stage) {
-    stage->rect.x = windowConfig.width * 0.4;
+    stage->rect.x = windowConfig.width * 0.65;
     stage->rect.y = windowConfig.height * 0.04;
-    stage->rect.w = windowConfig.width * 0.6;
+    stage->rect.w = windowConfig.width * 0.35;
     stage->rect.h = windowConfig.height * 0.96;
 }
 
