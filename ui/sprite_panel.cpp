@@ -4,6 +4,8 @@
 #include "sprite_panel.h"
 #include "../core/config.h"
 
+
+
 void initSpritePanel(SpritePanel *panel) {
     panel->rect.x = windowConfig.width * 0.325;
     panel->rect.y = windowConfig.height * 0.04;
@@ -12,20 +14,24 @@ void initSpritePanel(SpritePanel *panel) {
 
 }
 
-void drawSpritePanel(SDL_Renderer *renderer, const SpritePanel *panel, const Sprite *sprite) {
+void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel){
     SDL_SetRenderDrawColor(renderer, 240, 240, 240, 255);
     SDL_RenderFillRect(renderer, &panel->rect);
 
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
     SDL_RenderDrawRect(renderer, &panel->rect);
+}
+
+void drawSpritePanel(SDL_Renderer *renderer, const SpritePanel *panel, const Sprite *sprite, int index, int panelSelectedIndex) {
+
 
     SDL_Rect item;
     item.w = panel->rect.w - 20;
-    item.h = 60;
+    item.h = PANEL_ITEM_HEIGHT;
     item.x = panel->rect.x +10;
-    item.y = 20;
+    item.y = panel->rect.y + 10 + index * (PANEL_ITEM_MARGIN + PANEL_ITEM_HEIGHT);
 
-    if(sprite->selected){
+    if(index == panelSelectedIndex){
         SDL_SetRenderDrawColor(renderer,255,220,150,255);
         SDL_RenderFillRect(renderer,&item);
     }

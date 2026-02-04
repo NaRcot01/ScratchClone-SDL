@@ -3,18 +3,23 @@
 //
 
 #include <iostream>
+#include <vector>
 #include "engine.h"
 #include "config.h"
 #include "../ui/sprite_panel.h"
 #include "../ui/sprite.h"
 #include "../ui/stage.h"
 
+
+
+int panelSelectedIndex = -1;
+
+
 SDL_Event event;
-
-
 Stage stage;
-Sprite sprite;
+std::vector<Sprite> sprites;
 SpritePanel spritePanel;
+Sprite* activeSprite = NULL;
 
 void engineInit(Engine &engine) {
     engine.running = true;
@@ -36,44 +41,66 @@ void engineHandleEvents(Engine &engine) {
             resizeStage(&stage);
         }
         if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
-            sprite.dragging = false;
+            if(activeSprite) {
+                activeSprite->dragging = false;
+                activeSprite = NULL;
+            }
         }
-        if (event.type == SDL_MOUSEMOTION && sprite.dragging) {
-            int m_x = event.button.x;
-            int m_y = event.button.y;
-            std::cout << " dragging sprite " << std::endl;
-            // log :
-            moveSprite(&sprite, m_x - sprite.diff_x_mouse, m_y - sprite.diff_y_mouse, &stage);
+        if (event.type == SDL_MOUSEMOTION) {
+            if(activeSprite && activeSprite->dragging) {
+                int m_x = event.button.x;
+                int m_y = event.button.y;
+                std::cout << " dragging sprite " << std::endl;
+                // log :
+                moveSprite(activeSprite, m_x - activeSprite->diff_x_mouse, m_y - activeSprite->diff_y_mouse, &stage);
+            }
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            bool clickOnPanel = 0;
+
             int m_x = event.button.x;
             int m_y = event.button.y;
 
-            if (isSpriteClicked(m_x, m_y, &sprite)) {
-                sprite.selected = true;
-                sprite.dragging = true;
-                std::cout << " sprite clicked " << std::endl;
-                sprite.diff_x_mouse = m_x - sprite.rect.x;
-                sprite.diff_y_mouse = m_y - sprite.rect.y;
-            } else {
-                sprite.selected = false;
-                sprite.dragging = false;
+            for(int i=0;i<sprites.size();i++) {
+                Sprite& sprite = sprites[i];
+
+                SDL_Rect itemRect = {
+                        spritePanel.rect.x + 10,
+                        spritePanel.rect.y+10+i*(PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN),
+                        spritePanel.rect.w - 20,
+                        PANEL_ITEM_HEIGHT
+                };
+
+                if (m_x >= itemRect.x &&
+                    m_x <= itemRect.x + itemRect.w &&
+                    m_y >= itemRect.y &&
+                    m_y <= itemRect.y + itemRect.h)
+                {
+                    panelSelectedIndex = i;
+                    clickOnPanel = true;
+                    break;
+                }
+            }
+            if(!clickOnPanel){
+                activeSprite = NULL;
+                panelSelectedIndex = -1;
+                for(int i = 0; i<sprites.size();i++){
+                    Sprite& sprite = sprites[i];
+                    sprite.selected = false;
+                    sprite.dragging = false;
+                    if (isSpriteClicked(m_x, m_y, &sprite)) {
+                        sprite.selected = true;
+                        sprite.dragging = true;
+                        std::cout << " sprite clicked " << std::endl;
+                        sprite.diff_x_mouse = m_x - sprite.rect.x;
+                        sprite.diff_y_mouse = m_y - sprite.rect.y;
+                        activeSprite = &sprite;
+                        panelSelectedIndex = i;
+                        break;
+                    }
+                }
             }
 
-            SDL_Rect itemRect = {
-                    spritePanel.rect.x + 10,
-                    20,
-                    spritePanel.rect.w - 20,
-                    60
-            };
-
-            if (m_x >= itemRect.x &&
-                m_x <= itemRect.x + itemRect.w &&
-                m_y >= itemRect.y &&
-                m_y <= itemRect.y + itemRect.h)
-            {
-                sprite.selected = true;
-            }
         }
 
 
@@ -84,10 +111,34 @@ void engineUpdate() {
 
 }
 
+void initSprites(){
+    sprites.resize(3); // should be removed.    JUST FOR TEST
+    for(int i=0;i<sprites.size();i++){
+        initSprite(sprites[i],&stage);
+        sprites[i].rect.x += 50 * i;
+    }
+}
+
+void drawSprites(SDL_Renderer *renderer){
+
+    for(int i =0;i< sprites.size();i++){
+        Sprite& sprite = sprites[i];
+        drawSprite(renderer, &sprite);
+    }
+}
+
+void drawSpritePanels(SDL_Renderer* renderer){
+    drawSpritePanelBase(renderer,&spritePanel);
+    for(int i =0;i< sprites.size();i++) {
+        Sprite& sprite = sprites[i];
+        drawSpritePanel(renderer, &spritePanel, &sprite,i,panelSelectedIndex);
+    }
+}
+
 //this function will be called in the main file before the while loop
 void initBase() {
     initStage(&stage);
-    initSprite(sprite, &stage);
+    initSprites();
     initSpritePanel(&spritePanel);
 }
 
@@ -96,8 +147,8 @@ void engineDraw(SDL_Renderer *renderer) {
     SDL_RenderClear(renderer);
 
     drawStage(renderer, &stage);
-    drawSprite(renderer, &sprite);
-    drawSpritePanel(renderer, &spritePanel, &sprite);
+    drawSprites(renderer);
+
 
     SDL_RenderPresent(renderer);
 }

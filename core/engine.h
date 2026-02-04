@@ -14,3 +14,5 @@ void engineInit(Engine &engine);
 void engineHandleEvents(Engine &engine);
 void engineUpdate();
 void engineDraw(SDL_Renderer* renderer);
+void drawSprites(SDL_Renderer *renderer);
+void drawSpritePanels(SDL_Renderer *renderer);
