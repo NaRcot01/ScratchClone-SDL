@@ -8,21 +8,22 @@ void initSprite(Sprite& sprite, const Stage* stage){
     sprite.rect.y = stage->rect.y * 1.1;
     sprite.rect.h = stage->rect.h * 0.2;
     sprite.rect.w = stage->rect.w * 0.3;
+    sprite.texture = NULL;
     sprite.selected = false;
     sprite.dragging = false;
     sprite.diff_x_mouse = 0;
     sprite.diff_y_mouse = 0;
-
 }
 
 void drawSprite(SDL_Renderer* renderer, const Sprite* sprite){
-    if(sprite->selected){
-        SDL_SetRenderDrawColor(renderer,255,125,200,255);
-        SDL_RenderDrawRect(renderer,&sprite->rect);
-    }
 
-    SDL_SetRenderDrawColor(renderer,18,100,100,255);
-    SDL_RenderFillRect(renderer,&sprite->rect);
+    if(sprite->texture){
+        SDL_RenderCopy(renderer,sprite->texture,NULL,&sprite->rect);
+    }
+    else{
+        SDL_SetRenderDrawColor(renderer,18,100,100,255);
+        SDL_RenderFillRect(renderer,&sprite->rect);
+    }
 }
 
 bool isSpriteClicked(int x, int y, const Sprite* sprite){
@@ -54,4 +55,16 @@ void moveSprite(Sprite* sprite, int x, int y, const Stage* stage, bool different
         sprite->rect.y = stage->rect.y + stage->rect.h - sprite->rect.h;
     }
 
+}
+
+bool loadSpriteTexture(SDL_Renderer* renderer, Sprite& sprite, std::string path){
+    SDL_Surface* surface = SDL_LoadBMP(path.c_str());
+    if(!surface){
+        return false;
+    }
+
+    sprite.texture = SDL_CreateTextureFromSurface(renderer,surface);
+    SDL_FreeSurface(surface);
+
+    return sprite.texture != NULL;
 }

@@ -35,13 +35,22 @@ void drawSpritePanel(SDL_Renderer *renderer, const SpritePanel *panel, const Spr
         SDL_SetRenderDrawColor(renderer,255,220,150,255);
         SDL_RenderFillRect(renderer,&item);
     }
-
-    SDL_SetRenderDrawColor(renderer,120,170,255,255);
-    SDL_Rect icon = {
-            item.x +10,
-            item.y +10,
-            40,40
-    };
-    SDL_RenderFillRect(renderer,&icon);
-
+    if(sprite->texture){
+        SDL_Rect icon = {
+                item.x + 10,
+                item.y + 10,
+                40,
+                40
+        };
+        SDL_RenderCopy(renderer,sprite->texture,NULL,&icon);
+    }
+    else {
+        SDL_SetRenderDrawColor(renderer, 120, 170, 255, 255);
+        SDL_Rect icon = {
+                item.x + 10,
+                item.y + 10,
+                40, 40
+        };
+        SDL_RenderFillRect(renderer, &icon);
+    }
 }

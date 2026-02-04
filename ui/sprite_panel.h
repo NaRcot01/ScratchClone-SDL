@@ -10,9 +10,6 @@ struct SpritePanel{
     SDL_Rect rect;
 };
 
-const int PANEL_ITEM_HEIGHT = 60;
-const int PANEL_ITEM_MARGIN = 10;
-
 
 void initSpritePanel(SpritePanel* panel);
 void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel);

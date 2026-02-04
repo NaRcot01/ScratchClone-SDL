@@ -136,10 +136,14 @@ void drawSpritePanels(SDL_Renderer* renderer){
 }
 
 //this function will be called in the main file before the while loop
-void initBase() {
+void initBase(SDL_Renderer *renderer) {
     initStage(&stage);
     initSprites();
     initSpritePanel(&spritePanel);
+
+    for(auto &sprite : sprites){
+        loadSpriteTexture(renderer,sprite,ASSETS_PATH + "test.bmp");
+    }
 }
 
 void engineDraw(SDL_Renderer *renderer) {

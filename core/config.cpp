@@ -1,6 +1,8 @@
 //
-// Created by jack on 2/1/2026.
+// Created by jack on 2/4/2026.
 //
+
 #include "config.h"
 
-WindowConfig windowConfig = {1600,800};
+WindowConfig windowConfig;
+std::string ASSETS_PATH = "../assets/";
