@@ -2,6 +2,7 @@
 // Created by jack on 2/2/2026.
 //
 #include "sprite.h"
+#include "../tools/tools.h"
 
 void initSprite(Sprite& sprite, const Stage* stage){
     sprite.rect.x = stage->rect.x * 1.1;
@@ -13,6 +14,16 @@ void initSprite(Sprite& sprite, const Stage* stage){
     sprite.dragging = false;
     sprite.diff_x_mouse = 0;
     sprite.diff_y_mouse = 0;
+    sprite.rotation = 90;
+    sprite.size = 100;
+    sprite.name = generateRandomName();
+
+}
+
+void changeSpriteSize(Sprite& sprite, int size){
+    sprite.size = size;
+    sprite.rect.h *= size / 100;
+    sprite.rect.w *= size / 100;
 }
 
 void drawSprite(SDL_Renderer* renderer, const Sprite* sprite){

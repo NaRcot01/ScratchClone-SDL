@@ -11,10 +11,13 @@
 struct Sprite{
     SDL_Rect rect;
     SDL_Texture* texture;
+    std::string name;
     bool selected;
     bool dragging;
     int diff_x_mouse;
     int diff_y_mouse;
+    int rotation;
+    int size;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

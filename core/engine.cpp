@@ -10,7 +10,7 @@
 #include "../ui/sprite.h"
 #include "../ui/stage.h"
 #include "../ui/topbar.h"
-
+#include "../ui/property_panel.h"
 
 
 int panelSelectedIndex = -1;
@@ -24,6 +24,9 @@ Sprite* activeSprite = NULL;
 bool showSpritePanel = false;
 TopBar topBar;
 TTF_Font* font;
+PropertyPanel propertyPanel;
+
+
 
 void engineInit(Engine &engine) {
     engine.running = true;
@@ -47,7 +50,7 @@ void engineHandleEvents(Engine &engine) {
         if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
             if(activeSprite) {
                 activeSprite->dragging = false;
-                activeSprite = NULL;
+
             }
         }
         if (event.type == SDL_MOUSEMOTION) {
@@ -70,7 +73,7 @@ void engineHandleEvents(Engine &engine) {
 
                 SDL_Rect itemRect = {
                         spritePanel.rect.x + 10,
-                        spritePanel.rect.y+10+i*(PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN),
+                        spritePanel.rect.y+10+i*(PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN) + 20,
                         spritePanel.rect.w - 20,
                         PANEL_ITEM_HEIGHT
                 };
@@ -83,9 +86,10 @@ void engineHandleEvents(Engine &engine) {
                     panelSelectedIndex = i;
                     clickOnPanel = true;
                     activeSprite = &sprites[i];
+                    propertyPanel.visible = true;
                     activeSprite->selected = true;
                     activeSprite->dragging = false;
-                    for(int j =0 ;j< sprites.size();j++){
+                    for(int j =0 ;j< sprites.size();j++){ //make sure other sprites are deselected
                         if(i!=j){
                             sprites[j].selected = false;
                         }
@@ -96,6 +100,7 @@ void engineHandleEvents(Engine &engine) {
             if(!clickOnPanel){
                 activeSprite = NULL;
                 panelSelectedIndex = -1;
+                propertyPanel.visible = false;
                 for(int i = 0; i<sprites.size();i++){
                     Sprite& sprite = sprites[i];
                     sprite.selected = false;
@@ -107,6 +112,7 @@ void engineHandleEvents(Engine &engine) {
                         sprite.diff_x_mouse = m_x - sprite.rect.x;
                         sprite.diff_y_mouse = m_y - sprite.rect.y;
                         activeSprite = &sprite;
+                        propertyPanel.visible = true;
                         panelSelectedIndex = i;
                         break;
                     }
@@ -116,9 +122,12 @@ void engineHandleEvents(Engine &engine) {
                 TopBarButton& btn = topBar.buttons[i];
                 if(btn.isClicked(m_x,m_y)){
                     if(btn.type == BTN_SPRITE_PANEL){
-                        showSpritePanel = true;
+                        showSpritePanel = !showSpritePanel;
                     }
                 }
+            }
+            if(propertyPanel.visible){
+                handlePropertyPanelClicked(&propertyPanel, activeSprite,m_x,m_y);
             }
 
         }
@@ -159,7 +168,6 @@ void drawSpritePanels(SDL_Renderer* renderer){
 //this function will be called in the main file before the while loop
 void initBase(SDL_Renderer *renderer) {
     font = loadFont();
-    std::cout << font;
     initStage(&stage);
     initSprites();
     initSpritePanel(&spritePanel);
@@ -167,6 +175,7 @@ void initBase(SDL_Renderer *renderer) {
     for(auto &sprite : sprites){
         loadSpriteTexture(renderer,sprite,ASSETS_PATH + "test.bmp");
     }
+    initPropertyPanel(&propertyPanel,windowConfig.width,windowConfig.height);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -179,7 +188,9 @@ void engineDraw(SDL_Renderer *renderer) {
     if(showSpritePanel){
         drawSpritePanels(renderer);
     }
-//    drawTopBar(renderer,&topBar,font);
+    if(activeSprite != nullptr){
+        drawPropertyPanel(renderer,&propertyPanel,activeSprite,font);
+    }
 
     SDL_RenderPresent(renderer);
 }

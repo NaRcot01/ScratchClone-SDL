@@ -29,7 +29,7 @@ void drawSpritePanel(SDL_Renderer *renderer, const SpritePanel *panel, const Spr
     item.w = panel->rect.w - 20;
     item.h = PANEL_ITEM_HEIGHT;
     item.x = panel->rect.x +10;
-    item.y = panel->rect.y + 10 + index * (PANEL_ITEM_MARGIN + PANEL_ITEM_HEIGHT);
+    item.y = panel->rect.y + 10 + index * (PANEL_ITEM_MARGIN + PANEL_ITEM_HEIGHT) + 20;
 
     if(index == panelSelectedIndex){
         SDL_SetRenderDrawColor(renderer,255,220,150,255);
