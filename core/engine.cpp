@@ -9,6 +9,7 @@
 #include "../ui/sprite_panel.h"
 #include "../ui/sprite.h"
 #include "../ui/stage.h"
+#include "../ui/topbar.h"
 
 
 
@@ -20,6 +21,9 @@ Stage stage;
 std::vector<Sprite> sprites;
 SpritePanel spritePanel;
 Sprite* activeSprite = NULL;
+bool showSpritePanel = false;
+TopBar topBar;
+TTF_Font* font;
 
 void engineInit(Engine &engine) {
     engine.running = true;
@@ -56,7 +60,7 @@ void engineHandleEvents(Engine &engine) {
             }
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-            bool clickOnPanel = 0;
+            bool clickOnPanel = false;
 
             int m_x = event.button.x;
             int m_y = event.button.y;
@@ -78,6 +82,14 @@ void engineHandleEvents(Engine &engine) {
                 {
                     panelSelectedIndex = i;
                     clickOnPanel = true;
+                    activeSprite = &sprites[i];
+                    activeSprite->selected = true;
+                    activeSprite->dragging = false;
+                    for(int j =0 ;j< sprites.size();j++){
+                        if(i!=j){
+                            sprites[j].selected = false;
+                        }
+                    }
                     break;
                 }
             }
@@ -100,6 +112,14 @@ void engineHandleEvents(Engine &engine) {
                     }
                 }
             }
+            for(int i=0;i<topBar.buttonCount;i++){
+                TopBarButton& btn = topBar.buttons[i];
+                if(btn.isClicked(m_x,m_y)){
+                    if(btn.type == BTN_SPRITE_PANEL){
+                        showSpritePanel = true;
+                    }
+                }
+            }
 
         }
 
@@ -110,6 +130,7 @@ void engineHandleEvents(Engine &engine) {
 void engineUpdate() {
 
 }
+
 
 void initSprites(){
     sprites.resize(3); // should be removed.    JUST FOR TEST
@@ -137,10 +158,12 @@ void drawSpritePanels(SDL_Renderer* renderer){
 
 //this function will be called in the main file before the while loop
 void initBase(SDL_Renderer *renderer) {
+    font = loadFont();
+    std::cout << font;
     initStage(&stage);
     initSprites();
     initSpritePanel(&spritePanel);
-
+    initTopBar(&topBar);
     for(auto &sprite : sprites){
         loadSpriteTexture(renderer,sprite,ASSETS_PATH + "test.bmp");
     }
@@ -152,7 +175,11 @@ void engineDraw(SDL_Renderer *renderer) {
 
     drawStage(renderer, &stage);
     drawSprites(renderer);
-
+    drawTopBar(renderer,&topBar,font);
+    if(showSpritePanel){
+        drawSpritePanels(renderer);
+    }
+//    drawTopBar(renderer,&topBar,font);
 
     SDL_RenderPresent(renderer);
 }

@@ -5,13 +5,15 @@
 #include "core/engine.h"
 
 
-
 int main(int argc, char* argv[]){
     SDL_Window* window;
     SDL_Renderer* renderer;
+
     if(!initSDL(window,renderer)){
         return 1;
     }
+
+
 
     Engine engine;
     engineInit(engine);
