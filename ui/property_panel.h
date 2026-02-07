@@ -24,4 +24,4 @@ struct PropertyPanel{
 
 void initPropertyPanel(PropertyPanel* panel, int screenWidth, int screenHeight);
 void drawPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, Sprite *activeSprite, TTF_Font *font);
-void handlePropertyPanelClicked(PropertyPanel* panel,Sprite* activeSprite, int m_x,int m_y);
+bool handlePropertyPanelClicked(PropertyPanel* panel,Sprite* activeSprite, int m_x,int m_y);

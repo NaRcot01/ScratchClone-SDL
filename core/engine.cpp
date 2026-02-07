@@ -68,6 +68,10 @@ void engineHandleEvents(Engine &engine) {
             int m_x = event.button.x;
             int m_y = event.button.y;
 
+            if(propertyPanel.visible && handlePropertyPanelClicked(&propertyPanel, activeSprite,m_x,m_y)){
+                return; // mouse is clicked on property panel so there is no need to check other conditions.
+            }
+
             for(int i=0;i<sprites.size();i++) {
                 Sprite& sprite = sprites[i];
 
@@ -118,6 +122,7 @@ void engineHandleEvents(Engine &engine) {
                     }
                 }
             }
+
             for(int i=0;i<topBar.buttonCount;i++){
                 TopBarButton& btn = topBar.buttons[i];
                 if(btn.isClicked(m_x,m_y)){
@@ -125,9 +130,6 @@ void engineHandleEvents(Engine &engine) {
                         showSpritePanel = !showSpritePanel;
                     }
                 }
-            }
-            if(propertyPanel.visible){
-                handlePropertyPanelClicked(&propertyPanel, activeSprite,m_x,m_y);
             }
 
         }

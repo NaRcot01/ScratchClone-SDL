@@ -53,8 +53,11 @@ void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, i
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color gray = {128, 128, 128, 255};
     SDL_Color yellow = {255, 200, 100, 255};
+    SDL_Color green = {123, 210, 51,255};
 
-    SDL_Color border = row->active ? yellow : gray;
+    SDL_Color border = row->active ? green : gray;
+    int borderThickness = row->active ? 3 : 1;
+
 
     // draw label. i.g: name,x,y....
     drawText(renderer, font, row->label, x, y, yellow);
@@ -63,9 +66,18 @@ void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, i
     SDL_SetRenderDrawColor(renderer, white.r, white.g, white.b, white.a);
     SDL_RenderFillRect(renderer, &row->inputRect);
 
-    //input box border. color changed if its activated
+    //input box border. color changed if its activated with more thickness.
     SDL_SetRenderDrawColor(renderer, border.r, border.g, border.b, border.a);
-    SDL_RenderDrawRect(renderer, &row->inputRect);
+    for (int i = 0; i < borderThickness; i++) {
+        SDL_Rect rect = {
+                row->inputRect.x - i,
+                row->inputRect.y - i,
+                row->inputRect.w + 2 * i,
+                row->inputRect.h + 2 * i,
+
+        };
+        SDL_RenderDrawRect(renderer, &rect);
+    }
 
     //text inside the input box
     if (!row->value.empty()) {
@@ -103,15 +115,18 @@ void drawPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, Sprite *act
 
 }
 
-void handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int m_x, int m_y) {
+bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int m_x, int m_y) {
     SDL_Point p = {m_x, m_y};
-
+    bool isClicked = false;
     for (int i = 0; i < 5; i++) {
         if (SDL_PointInRect(&p, &panel->rows[i].inputRect)) {
             panel->rows[i].active = true;
+            isClicked = true;
         } else {
             panel->rows[i].active = false;
         }
     }
+
+    return isClicked;
 
 }
