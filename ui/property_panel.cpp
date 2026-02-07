@@ -6,6 +6,7 @@
 #include "property_panel.h"
 #include "sprite.h"
 #include "font.h"
+#include <iostream>
 
 void initPropertyPanel(PropertyPanel *panel, int screenWidth, int screenHeight) {
 
@@ -34,8 +35,9 @@ void initPropertyPanel(PropertyPanel *panel, int screenWidth, int screenHeight) 
 
     for (int i = 0; i < 5; i++) {
         panel->rows[i].label = labels[i];
-        panel->rows->value = "";
-        panel->rows->active = false;
+        panel->rows[i].value = "";
+        panel->rows[i].active = false;
+        panel->rows[i].type = propertyType[i];
 
         int rowY = panel->rect.y + paddingY + i * rowHeight;
 
@@ -66,7 +68,7 @@ void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, i
     SDL_SetRenderDrawColor(renderer, white.r, white.g, white.b, white.a);
     SDL_RenderFillRect(renderer, &row->inputRect);
 
-    //input box border. color changed if its activated with more thickness.
+    //input box border. color changed if it's activated with more thickness.
     SDL_SetRenderDrawColor(renderer, border.r, border.g, border.b, border.a);
     for (int i = 0; i < borderThickness; i++) {
         SDL_Rect rect = {
@@ -96,8 +98,8 @@ void drawPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, Sprite *act
 
 
     panel->rows[0].value = activeSprite->name;
-    panel->rows[1].value = std::to_string(activeSprite->rect.x);
-    panel->rows[2].value = std::to_string(activeSprite->rect.y);
+    panel->rows[1].value = std::to_string(activeSprite->rect.x - 1040); // mokhtasat nesbet be stage dade mishe
+    panel->rows[2].value = std::to_string(activeSprite->rect.y - 32);  // mokhtasat nesbet be stage dade mishe
     panel->rows[3].value = std::to_string(activeSprite->size);
     panel->rows[4].value = std::to_string(activeSprite->rotation);
 
@@ -129,4 +131,34 @@ bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int 
 
     return isClicked;
 
+}
+
+
+void applyPropertyToSprite(PropertyRow& row, Sprite* sprite, Stage* stage){
+    char integerDefaultValue = '0';
+    if(row.value == "" && row.type != "PROPERTY_NAME") { row.value = integerDefaultValue; }
+
+    try {
+        if (row.type == "PROPERTY_NAME") {
+            sprite->name = row.value;
+            // log :
+        } else if (row.type == "PROPERTY_X") {
+            sprite->rect.x = std::stoi(row.value) + 1040;
+            // log :
+        } else if (row.type == "PROPERTY_Y") {
+            sprite->rect.y = std::stoi(row.value) + 32;
+            // log :
+        } else if (row.type == "PROPERTY_SIZE") {
+            sprite->size = std::stoi(row.value);
+            updateSpriteSize(sprite);
+            spriteValidate(sprite,stage);
+            // log :
+        } else if (row.type == "PROPERTY_ROTATION") {
+            sprite->rotation = std::stoi(row.value);
+            // log :
+        }
+    }
+    catch(...) {
+        // log : error while updating sprite info
+    }
 }

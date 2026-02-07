@@ -22,6 +22,8 @@ struct Sprite{
 
 void initSprite(Sprite& sprite, const Stage* stage);
 void drawSprite(SDL_Renderer* renderer, const Sprite* sprite);
+void spriteValidate(Sprite *sprite, const Stage *stage);
 bool isSpriteClicked(int x, int y, const Sprite* sprite);
 void moveSprite(Sprite* sprite, int x, int y, const Stage* stage, bool differential = false);
 bool loadSpriteTexture(SDL_Renderer* renderer, Sprite& sprite, std::string path);
+void updateSpriteSize(Sprite *sprite);
