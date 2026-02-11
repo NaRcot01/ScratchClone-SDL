@@ -14,7 +14,8 @@ enum struct BlockType {
     WAIT , REPEAT , IF , FOREVER ,
     END_REPEAT , END_IF ,
     ON_FLAG_CLICKED , CHANGE_X , CHANGE_Y , SET_SIZE ,
-    ELSE,
+    ELSE, SET_VAR , CHANGE_VAR , BROADCAST ,
+    OP_ADD , OP_SUB , OP_MUL , OP_DIV , OP_EQUAL , OP_LESS , OP_GREATER , RAND
 };
 
 struct Block {
@@ -23,5 +24,7 @@ struct Block {
     std::string textParam;
     int jumpToIndex = -1;
 };
+
+void preprocessScript(std::vector<Block> &v);
 
 #endif //SCRATCHCLONE_SDL_BLOCK_H

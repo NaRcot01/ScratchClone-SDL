@@ -7,6 +7,18 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include "BLOCK.h"
+
+using namespace std;
+
+struct Script {
+    vector<Block> blocks;
+    int pc = 0;
+    bool isActive = false;
+    double waitTimer = 0.0;
+    map <int , int> loopStack;
+};
 
 struct Sprite {
     std::string name;
@@ -15,6 +27,9 @@ struct Sprite {
     bool isVisible = true;
     double size = 100.0;
     int costumeIndex = 0;
+
+    vector <Script> scripts;
+    map<string , double> variables;
 };
 
 
