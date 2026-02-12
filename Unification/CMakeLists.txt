@@ -23,6 +23,8 @@ add_executable(ScratchClone_Unified
     ui/font.h
     core/engine.cpp
     core/engine.h
+    core/physics.cpp
+    core/physics.h
     core/sdl_init.cpp
     core/sdl_init.h
     core/config.cpp
