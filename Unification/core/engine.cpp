@@ -174,8 +174,27 @@ void engineHandleEvents(Engine &engine) {
     }
 }
 
+void updateScript(Script &script , Sprite &sprite , double deltaTime , std::vector<std::string> &logs);
+
 void engineUpdate() {
 
+static Uint32 lastTime = 0;
+Uint32 currentTime = SDL_GetTicks();
+if (lastTime == 0) lastTime = currentTime;
+double deltaTime = (currentTime - lastTime)/1000.0;
+lastTime=currentTime;
+
+std::vector<std::string> logs;
+for (auto &sprite : sprites) {
+	for (auto &script : sprite.scripts){
+		updateScript(script, sprite, deltaTime, logs);
+	}
+	spriteValidate(&sprite, &stage);
+	}
+	
+	for(const auto& log : logs) {
+		std::cout << log << std::endl;
+	}
 }
 
 

@@ -1,4 +1,3 @@
-// unified by mehdi on 2/13/2026
 // ui/sprite.h
 // Unified sprite Header
 
