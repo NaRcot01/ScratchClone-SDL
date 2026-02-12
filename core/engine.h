@@ -11,7 +11,7 @@ struct Engine{
 
 void initBase(SDL_Renderer *renderer);
 void engineInit(Engine &engine);
-void engineHandleEvents(Engine &engine);
+void engineHandleEvents(Engine &engine, SDL_Renderer* renderer);
 void engineUpdate();
 void engineDraw(SDL_Renderer* renderer);
 void drawSprites(SDL_Renderer *renderer);

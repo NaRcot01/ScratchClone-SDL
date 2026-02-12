@@ -5,12 +5,43 @@
 #include "../core/config.h"
 
 
-void initSpritePanel(SpritePanel *panel) {
+void initSpritePanel(SpritePanel *panel, SDL_Renderer *renderer) {
     panel->rect.x = windowConfig.width * 0.325;
     panel->rect.y = windowConfig.height * 0.04;
     panel->rect.w = windowConfig.width * 0.2;
     panel->rect.h = windowConfig.height * 0.96;
 
+
+    std::string icon_files[4] = {
+            "icons/upload.bmp",
+            "icons/library.bmp",
+            "icons/random.bmp",
+            "icons/paint.bmp",
+    };
+
+    int buttonSize = panel->rect.w * 0.1;
+    int totalButtonWidth = buttonSize * 4 + 30;
+    int startX = panel->rect.x + (panel->rect.w - 200) / 2;
+    int startY = panel->rect.y + 15;
+
+    for (int i = 0; i < 4; i++) {
+        panel->buttonRects[i] = {
+                startX + i * (buttonSize + 30),
+                startY,
+                buttonSize,
+                buttonSize,
+        };
+        std::string path = ASSETS_PATH + icon_files[i];
+        SDL_Surface *surface = SDL_LoadBMP(path.c_str());
+        if (!surface) {
+            // log : error while loading icon_files[i]
+            panel->buttonTextures[i] = nullptr;
+            continue;
+        }
+
+        panel->buttonTextures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+    }
 }
 
 void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel) {
@@ -19,6 +50,15 @@ void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel) {
 
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
     SDL_RenderDrawRect(renderer, &panel->rect);
+
+
+    for (int i = 0; i < 4; i++) {
+        if(panel->buttonTextures[i]){
+            SDL_SetRenderDrawColor(renderer,255,255,255,255);
+            SDL_RenderFillRect(renderer,&panel->buttonRects[i]);
+            SDL_RenderCopy(renderer,panel->buttonTextures[i], nullptr,&panel->buttonRects[i]);
+        }
+    }
 }
 
 void drawSpritePanelItem(SDL_Renderer *renderer, const SpritePanel *panel, const Sprite *sprite, int index,
@@ -29,7 +69,7 @@ void drawSpritePanelItem(SDL_Renderer *renderer, const SpritePanel *panel, const
     item.w = panel->rect.w - 20;
     item.h = PANEL_ITEM_HEIGHT;
     item.x = panel->rect.x + 10;
-    item.y = panel->rect.y + 10 + index * (PANEL_ITEM_MARGIN + PANEL_ITEM_HEIGHT) + 20;
+    item.y = panel->rect.y + 50 + index * (PANEL_ITEM_MARGIN + PANEL_ITEM_HEIGHT) + 20;
 
     if (index == panelSelectedIndex) {
         SDL_SetRenderDrawColor(renderer, 255, 220, 150, 255);

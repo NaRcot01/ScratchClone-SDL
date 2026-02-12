@@ -3,11 +3,18 @@
 //
 #include "sdl_init.h"
 #include "config.h"
+#include <SDL2/SDL_image.h>
 
 bool initSDL(SDL_Window* &window, SDL_Renderer* &renderer){
     if(SDL_Init(SDL_INIT_VIDEO) != 0){
         // log :
         std::cout << "sdl init failed"<<std::endl;
+        return false;
+    }
+
+    int imgFlags = IMG_INIT_JPG | IMG_INIT_PNG;
+    if(!(IMG_Init(imgFlags) & imgFlags)){
+        // log : sdl image can not be initialize.
         return false;
     }
 
@@ -32,5 +39,6 @@ bool initSDL(SDL_Window* &window, SDL_Renderer* &renderer){
 void quitSDL(SDL_Window* &window, SDL_Renderer* &renderer){
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    IMG_Quit();
     SDL_Quit();
 }

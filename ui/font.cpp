@@ -26,7 +26,6 @@ TTF_Font* loadFont(){
         return 0;
     }
     TTF_Font* font = TTF_OpenFont((ASSETS_PATH + std::string("font/font.ttf")).c_str(),16);
-    std::cout << ASSETS_PATH + std::string("font/font.ttf");
     return font;
 }
 

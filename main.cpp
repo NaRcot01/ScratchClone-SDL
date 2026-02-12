@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
     initBase(renderer);
 
     while(engine.running){
-        engineHandleEvents(engine);
+        engineHandleEvents(engine, renderer);
         engineUpdate();
         engineDraw(renderer);
     }

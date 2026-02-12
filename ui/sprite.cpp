@@ -3,6 +3,8 @@
 //
 #include "sprite.h"
 #include "../tools/tools.h"
+#include <SDL2/SDL_image.h>
+
 
 const int spriteHeight = 160;
 const int spriteWidth = 160;
@@ -60,8 +62,9 @@ void moveSprite(Sprite *sprite, int x, int y, const Stage *stage, bool different
 }
 
 bool loadSpriteTexture(SDL_Renderer *renderer, Sprite &sprite, std::string path) {
-    SDL_Surface *surface = SDL_LoadBMP(path.c_str());
+    SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
+        // log : can not load sprite image!
         return false;
     }
 
@@ -95,4 +98,22 @@ void spriteValidate(Sprite *sprite, const Stage *stage) {
     if(sprite->rotation >= 360){
         sprite->rotation = sprite->rotation % 360;
     }
+}
+
+void addNewSpriteFromFile(SDL_Renderer* renderer, const char* filePath, Stage& stage, std::vector<Sprite>& sprites){
+    if(!filePath){
+        // log : file path for sprite is invalid!
+        return;
+    }
+    Sprite newSprite;
+    initSprite(newSprite,&stage);
+
+    if(loadSpriteTexture(renderer,newSprite,filePath)){
+        sprites.push_back(newSprite);
+    }
+    else{
+        // log : the sprite can not be added to the Sprite vector.
+    }
+
+
 }

@@ -11,7 +11,7 @@
 #include "../ui/stage.h"
 #include "../ui/topbar.h"
 #include "../ui/property_panel.h"
-
+#include "../tools/tinyfiledialogs.h"
 
 int panelSelectedIndex = -1;
 
@@ -31,7 +31,7 @@ void engineInit(Engine &engine) {
     engine.running = true;
 }
 
-void engineHandleEvents(Engine &engine) {
+void engineHandleEvents(Engine &engine, SDL_Renderer* renderer) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             engine.running = false;
@@ -112,13 +112,29 @@ void engineHandleEvents(Engine &engine) {
                 return; // mouse is clicked on property panel so there is no need to check other conditions.
             }
 
+            if(showSpritePanel){
+                if(SDL_PointInRect(&p,&spritePanel.buttonRects[0])){
+                    const char* filterPatterns[3] = {"*.png","*.jpg","*.bmp"};
+                    const char* filePath = tinyfd_openFileDialog(
+                            "Choose a Sprite Image",
+                            "",
+                            3,
+                            filterPatterns,
+                            "Image Files(JPG, PNG, BMP)",
+                            0
+                            );
+                    addNewSpriteFromFile(renderer,filePath,stage,sprites);
+                    return;
+                }
+            }
+
             for (int i = 0; i < sprites.size(); i++) { // checks if mouse is clicked on sprite item in sprite panel.
-                if (!showSpritePanel) { continue; }
+                if (!showSpritePanel) { break; }
                 Sprite &sprite = sprites[i];
 
                 SDL_Rect itemRect = {
                         spritePanel.rect.x + 10,
-                        spritePanel.rect.y + 10 + i * (PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN) + 20,
+                        spritePanel.rect.y + 50 + i * (PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN) + 20,
                         spritePanel.rect.w - 20,
                         PANEL_ITEM_HEIGHT
                 };
@@ -234,7 +250,7 @@ void initBase(SDL_Renderer *renderer) {
     font = loadFont();
     initStage(&stage);
     initSprites(renderer);
-    initSpritePanel(&spritePanel);
+    initSpritePanel(&spritePanel, renderer);
     initTopBar(&topBar);
     initPropertyPanel(renderer, &propertyPanel, windowConfig.width, windowConfig.height);
 }

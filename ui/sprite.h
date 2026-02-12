@@ -6,7 +6,7 @@
 #include <string>
 #include <SDL2/SDL.h>
 #include "stage.h"
-
+#include <vector>
 
 struct Sprite{
     SDL_Rect rect;
@@ -28,3 +28,4 @@ bool isSpriteClicked(int x, int y, const Sprite* sprite);
 void moveSprite(Sprite* sprite, int x, int y, const Stage* stage, bool differential = false);
 bool loadSpriteTexture(SDL_Renderer* renderer, Sprite& sprite, std::string path);
 void updateSpriteSize(Sprite *sprite);
+void addNewSpriteFromFile(SDL_Renderer* renderer, const char* filePath, Stage& stage, std::vector<Sprite>& sprites);
