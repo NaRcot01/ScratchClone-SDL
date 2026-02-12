@@ -6,9 +6,9 @@
 #include "property_panel.h"
 #include "sprite.h"
 #include "font.h"
-#include <iostream>
+#include "../core/config.h"
 
-void initPropertyPanel(PropertyPanel *panel, int screenWidth, int screenHeight) {
+void initPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, int screenWidth, int screenHeight) {
 
     panel->visible = false;
     panel->rect.x = 0.525 * screenWidth;
@@ -48,6 +48,24 @@ void initPropertyPanel(PropertyPanel *panel, int screenWidth, int screenHeight) 
         };
     }
 
+    SDL_Surface *surface1 = SDL_LoadBMP((ASSETS_PATH + "icons/eyeopen.bmp").c_str());
+    SDL_Surface *surface2 = SDL_LoadBMP((ASSETS_PATH + "icons/eyeclose.bmp").c_str());
+
+    if (!surface1 || !surface2) {
+        // log : error while loading eyeclose and eyeopen icons!
+    }
+
+    panel->eyeOpenTexture = SDL_CreateTextureFromSurface(renderer, surface1);
+    panel->eyeCloseTexture = SDL_CreateTextureFromSurface(renderer, surface2);
+
+    SDL_FreeSurface(surface1);
+    SDL_FreeSurface(surface2);
+
+    panel->visibilityBtnRect.w = panel->rect.w * 0.2;
+    panel->visibilityBtnRect.h = panel->rect.h * 0.15;
+    panel->visibilityBtnRect.x = panel->rect.x + panel->rect.w - panel->visibilityBtnRect.w - 140;
+    panel->visibilityBtnRect.y = panel->rect.y + panel->rect.h - panel->visibilityBtnRect.h;
+
 }
 
 void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, int x, int y) {
@@ -55,7 +73,7 @@ void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, i
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color gray = {128, 128, 128, 255};
     SDL_Color yellow = {255, 200, 100, 255};
-    SDL_Color green = {123, 210, 51,255};
+    SDL_Color green = {123, 210, 51, 255};
 
     SDL_Color border = row->active ? green : gray;
     int borderThickness = row->active ? 3 : 1;
@@ -115,6 +133,17 @@ void drawPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, Sprite *act
         drawPropertyRow(renderer, font, &panel->rows[i], x, y);
     }
 
+    SDL_SetRenderDrawColor(renderer,255,255,255,255);
+    SDL_RenderFillRect(renderer,&panel->visibilityBtnRect);
+
+    if (activeSprite->show) {
+        SDL_RenderCopy(renderer, panel->eyeOpenTexture, nullptr, &panel->visibilityBtnRect);
+        panel->visibilityBtnState = true;
+    } else {
+        SDL_RenderCopy(renderer, panel->eyeCloseTexture, nullptr, &panel->visibilityBtnRect);
+        panel->visibilityBtnState = false;
+    }
+
 }
 
 bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int m_x, int m_y) {
@@ -129,14 +158,21 @@ bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int 
         }
     }
 
+    if(SDL_PointInRect(&p, &panel->visibilityBtnRect)){
+        isClicked = true;
+        panel->visibilityBtnState = !panel->visibilityBtnState;
+        activeSprite->show = !activeSprite->show;
+    }
+    if (SDL_PointInRect(&p, &panel->rect)) { isClicked = true; }
+
     return isClicked;
 
 }
 
 
-void applyPropertyToSprite(PropertyRow& row, Sprite* sprite, Stage* stage){
+void applyPropertyToSprite(PropertyRow &row, Sprite *sprite, Stage *stage) {
     char integerDefaultValue = '0';
-    if(row.value == "" && row.type != "PROPERTY_NAME") { row.value = integerDefaultValue; }
+    if (row.value == "" && row.type != "PROPERTY_NAME") { row.value = integerDefaultValue; }
 
     try {
         if (row.type == "PROPERTY_NAME") {
@@ -151,14 +187,14 @@ void applyPropertyToSprite(PropertyRow& row, Sprite* sprite, Stage* stage){
         } else if (row.type == "PROPERTY_SIZE") {
             sprite->size = std::stoi(row.value);
             updateSpriteSize(sprite);
-            spriteValidate(sprite,stage);
+            spriteValidate(sprite, stage);
             // log :
         } else if (row.type == "PROPERTY_ROTATION") {
             sprite->rotation = std::stoi(row.value);
             // log :
         }
     }
-    catch(...) {
+    catch (...) {
         // log : error while updating sprite info
     }
 }

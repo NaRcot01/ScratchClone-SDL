@@ -18,6 +18,7 @@ struct Sprite{
     int diff_y_mouse;
     int rotation;
     int size;
+    bool show;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

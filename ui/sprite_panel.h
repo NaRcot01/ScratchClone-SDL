@@ -13,4 +13,4 @@ struct SpritePanel{
 
 void initSpritePanel(SpritePanel* panel);
 void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel);
-void drawSpritePanel(SDL_Renderer *renderer, const SpritePanel *panel, const Sprite *sprite, int index, int panelSelectedIndex);
+void drawSpritePanelItem(SDL_Renderer *renderer, const SpritePanel *panel, const Sprite *sprite, int index, int panelSelectedIndex);

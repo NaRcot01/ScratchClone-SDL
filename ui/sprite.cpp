@@ -20,6 +20,7 @@ void initSprite(Sprite &sprite, const Stage *stage) {
     sprite.rotation = 0;
     sprite.size = 100;
     sprite.name = generateRandomName();
+    sprite.show = true;
 
 }
 
