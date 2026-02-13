@@ -10,6 +10,10 @@ const int spriteWidth = 160;
 void initSprite(Sprite &sprite, const Stage *stage) {
     sprite.rect.x = stage->rect.x * 1.1;
     sprite.rect.y = stage->rect.y * 1.1;
+    sprite.exact_x = (double)sprite.rect.x;
+    sprite.exact_y = (double)sprite.rect.y;
+    sprite.direction = 90.0;
+    sprite.isVisible = true;
     sprite.rect.h = spriteHeight;
     sprite.rect.w = spriteWidth;
     sprite.texture = NULL;
@@ -53,6 +57,8 @@ void moveSprite(Sprite *sprite, int x, int y, const Stage *stage, bool different
         sprite->rect.y = y;
     }
 
+    sprite->exact_x = (double)sprite->rect.x;
+    sprite->exact_y = (double)sprite->rect.y;
 
     spriteValidate(sprite, stage);
 

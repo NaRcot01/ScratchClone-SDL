@@ -25,6 +25,14 @@ struct Block {
     int jumpToIndex = -1;
 };
 
+struct Script {
+	std::vector<Block> blocks;
+	int pc = 0;
+	bool isActive = false;
+	double waitTimer = 0.0;
+	std::map<int, int> loopStack;
+};
+
 void preprocessScript(std::vector<Block> &v);
 
 #endif //SCRATCHCLONE_SDL_BLOCK_H

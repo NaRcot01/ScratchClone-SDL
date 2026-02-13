@@ -144,9 +144,11 @@ void applyPropertyToSprite(PropertyRow& row, Sprite* sprite, Stage* stage){
             // log :
         } else if (row.type == "PROPERTY_X") {
             sprite->rect.x = std::stoi(row.value) + 1040;
+	    sprite->exact_x = (double)sprite->rect.x;
             // log :
         } else if (row.type == "PROPERTY_Y") {
             sprite->rect.y = std::stoi(row.value) + 32;
+	    sprite->exact_y = (double)sprite->rect.y;
             // log :
         } else if (row.type == "PROPERTY_SIZE") {
             sprite->size = std::stoi(row.value);

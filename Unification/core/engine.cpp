@@ -203,7 +203,24 @@ void initSprites() {
     for (int i = 0; i < sprites.size(); i++) {
         initSprite(sprites[i], &stage);
         sprites[i].rect.x += 50 * i;
+
+	sprites[i].exact_x = sprites[i].rect.x;
+	sprites[i].exact_y = sprites[i].rect.y;
     }
+	
+	Script testScript;
+	testScript.isActive = true;
+
+	Block bMove; bMove.type = BlockType::MOVE; bMove.parameters.push_back(2.0);
+	testScript.blocks.push_back(bMove);
+
+	Block bTurn; bTurn.type = BlockType::TURN_RIGHT; bTurn.parameters.push_back(1.0);
+	testScript.blocks.push_back(bTurn);
+
+	Block bLoop; bLoop.type = BlockType::FOREVER; bLoop.jumpToIndex = 0;
+	testScript.blocks.push_back(bLoop);
+
+	sprites[0].scripts.push_back(testScript);
 }
 
 void drawSprites(SDL_Renderer *renderer) {
