@@ -46,6 +46,8 @@ std::string getBlockName(BlockType type){
             return "WAIT";
         case BlockType::REPEAT:
             return "REPEAT";
+	case BlockType::FOREVER:
+            return "FOREVER";
         case BlockType::CHANGE_X:
             return "CHANGE_X";
         case BlockType::CHANGE_Y:
@@ -66,6 +68,26 @@ std::string getBlockName(BlockType type){
             return "SET_VAR";
         case BlockType::CHANGE_VAR:
             return "CHANGE_VAR";
+	case BlockType::OP_ADD:
+            return "OP_ADD";
+	case BlockType::END_REPEAT:
+            return "END_REPEAT";
+	case BlockType::END_IF:
+            return "END_IF";
+	case BlockType::IF:
+            return "IF";
+	case BlockType::ELSE:
+            return "ELSE";
+	case BlockType::ON_FLAG_CLICKED:
+            return "ON_FLAG_CLICKED";
+	case BlockType::CHANGE_X:
+            return "CHANGE_X";
+	case BlockType::CHANGE_Y:
+            return "CHANGE_Y";
+	case BlockType::SET_VAR:
+            return "SET_VAR";
+	case BlockType::BROADCAST:
+            return "BROADCAST";
         default:
             return "UNKNOWN";
     }
@@ -74,7 +96,7 @@ std::string getBlockName(BlockType type){
 
 void preprocessScript(std::vector <Block>& v){
     std::vector<int > st;
-    for (int i=0 ; i< v.size() ; ++i){
+    for (int i=0 ; i< (int)v.size() ; ++i){
         BlockType t =v[i].type ;
         if(t == BlockType::IF || t == BlockType:: REPEAT || t == BlockType:: FOREVER){
             st.push_back(i);
@@ -83,7 +105,7 @@ void preprocessScript(std::vector <Block>& v){
             if(!st.empty()){
                 int idx = st.back();
                 st.pop_back();
-                v[idx].jumpToIndex = i +1 ;
+                v[idx].jumpToIndex = i+1 ;
                 st.push_back(i);
             }
         } else if (t == BlockType::END_IF){
@@ -106,7 +128,7 @@ void preprocessScript(std::vector <Block>& v){
 void executeInstantBlock (const Block &block , Sprite & sprite  ){
     switch (block.type) {
         case BlockType::MOVE:{
-            double steps = 0;
+            double steps = 0.0;
             if(!block.parameters.empty()){
                 steps = block.parameters[0];
             }
@@ -123,7 +145,7 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
 
         }
         case BlockType::TURN_LEFT:{
-            double degree = 15;
+            double degree = 15.0;
             if(!block.parameters.empty()) {
                 degree = block.parameters[0];
             }
@@ -181,8 +203,51 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
             }
             break;
         }
+	case BlockType::SAY: {
+		if (!block.textParam.empty()) {
+			sprite.name = block.textParam;
+		}
+		break;
+	}
+	case BlockType::SET_VAR: {
+		if (!block.textParam.empty() && !block.parameters.empty()) {
+			sprite.variables[block.textParam] = block.parameters[0];
+		}
+		break;
+	}
+	case BlockType::CHANGE_VAR: {
+		if (!block.textParam.empty() && !block.parameters.empty()) {
+			double delta = block.parameters[0];
+			sprite.variables[block.textParam] +=delta;
+		}
+		break;
+	}
 
+	case BlockType::OP_ADD:
+	case BlockType::OP_SUB:
+	case BlockType::OP_MUL:
+	case BlockType::OP_DIV:
+	case BlockType::OP_EQUAL:
+	case BlockType::OP_LESS:
+	case BlockType::OP_GREATER:
+	case BlockType::OP_RAND: {
+	break;
+	}
 
+	case BlockType::ON_FLAG_CLICKED:
+	case BlockType::BROADCAST: {
+	break;
+	}
+
+	case BlockType::WAIT:
+	case BlockType::REPEAT:
+	case BlockType::END_REPEAT:
+	case BlockType::FOREVER:
+	case BlockType::IF:
+	case BlockType::ELSE:
+	case BlockType::END_IF: {
+	break;
+	}
 
         default:
             break;
@@ -190,10 +255,16 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
 }
 
 void updateScript(Script &script , Sprite &sprite , double deltaTime , vector<string> &logs){
-    if (!script.isActive || script.pc >= script.blocks.size()) {
+    if (!script.isActive || script.pc >= (int)script.blocks.size() || script.pc<0) {
         script.isActive = false;
         return;
     }
+    
+    script.instructionsThisFrame = 0;
+    const int MAX_STEPS_PER_FRAME = 32;
+    int steps = 0;
+	
+	while (steps < MAX_STEPS_PER_FRAME && script.isActive && script.pc >= 0 && script.pc < (int)script.blocks.size()) {
 
     const Block &currentBlock = script.blocks[script.pc];
 
@@ -219,20 +290,23 @@ void updateScript(Script &script , Sprite &sprite , double deltaTime , vector<st
     else if (currentBlock.type == BlockType::REPEAT) {
         if (script.loopStack.find(script.pc) == script.loopStack.end()) {
             int count = currentBlock.parameters.empty() ? 10 : (int)currentBlock.parameters[0];
+	    if (count<0) count=0;
             script.loopStack[script.pc] = count;
         }
         script.pc++;
     }
     else if (currentBlock.type == BlockType::END_REPEAT) {
         int startLine = currentBlock.jumpToIndex;
-        if (script.loopStack[startLine] > 1) {
-            script.loopStack[startLine]--;
-            script.pc = startLine + 1;
+	auto it = script.loopStack.find(starLine);
+        if (it != script.loopStack.end()) {
+            if (it->seconds > 1) {
+		it->seconds -= 1;
+		script.pc = starLine + 1;
         } else {
-            script.loopStack.erase(startLine);
+            script.loopStack.erase(it);
             script.pc++;
         }
-    }
+    } else { script.pc++;}}
     else if (currentBlock.type == BlockType::IF) {
         bool condition = false;
         if (!currentBlock.parameters.empty()) condition = (currentBlock.parameters[0] != 0);
@@ -254,10 +328,17 @@ void updateScript(Script &script , Sprite &sprite , double deltaTime , vector<st
         script.pc++;
         executed = true;
     }
-
     if (executed) {
-        string log_cmd = getBlockName(currentBlock.type);
-        string log_detail = "";
+	script.instructionsThisFrame++;
+	if (script.instructionsThisFrame>1000){
+		logs.push_back("[ERROR] Watchdog: too many instructions in one frame, stopping script.");
+		script.isActive = false;
+		return;
+		
+	}
+
+        std::string log_cmd = getBlockName(currentBlock.type);
+        std::string log_detail;
 
         if (std::abs(sprite.exact_x - oldX) > 0.001 || std::abs(sprite.exact_y - oldY) > 0.001) {
             log_detail = " Pos: (" + to_string((int)oldX) + "," + to_string((int)oldY) + ") -> (" +
@@ -270,7 +351,9 @@ void updateScript(Script &script , Sprite &sprite , double deltaTime , vector<st
 
         if (!log_detail.empty() || log_cmd != "UNKNOWN") {
             logs.push_back("[CMD: " + log_cmd + "]" + log_detail);
-        }
+            }
+    	}
+steps++; 
     }
 
 }

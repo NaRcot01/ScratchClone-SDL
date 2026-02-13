@@ -1,5 +1,5 @@
 //
-// Created by َAmir on 1/30/2026.
+// Created by Amir on 1/30/2026.
 //
 
 #ifndef SCRATCHCLONE_SDL_BLOCK_H
@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 enum struct BlockType {
     MOVE , TURN_RIGHT , TURN_LEFT , GO_TO_XY ,
@@ -31,6 +32,10 @@ struct Script {
 	bool isActive = false;
 	double waitTimer = 0.0;
 	std::map<int, int> loopStack;
+	int instructionsThisFrame = 0;
+
+	BlockType startEvent = BlockType::ON_FLAG_CLICKED;
+	int id = 0;
 };
 
 void preprocessScript(std::vector<Block> &v);

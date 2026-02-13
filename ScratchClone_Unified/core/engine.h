@@ -24,6 +24,9 @@ struct Engine{
     bool showSpritePanel = false;
    
     TTF_Font* font = nullptr;
+
+    bool isRunningScripts = false;
+    bool isPaused = false;
 };
 
 void initBase(Engine &engine, SDL_Renderer *renderer);
