@@ -17,12 +17,13 @@ int main(int argc, char* argv[]){
 
     Engine engine;
     engineInit(engine);
-    initBase(renderer);
+    initBase(engine, renderer);
+    SDL_Event event;
 
     while(engine.running){
-        engineHandleEvents(engine);
-        engineUpdate();
-        engineDraw(renderer);
+        engineHandleEvents(engine, event);
+        engineUpdate(engine);
+        engineDraw(engine, renderer);
     }
     quitSDL(window,renderer);
     return 0;
