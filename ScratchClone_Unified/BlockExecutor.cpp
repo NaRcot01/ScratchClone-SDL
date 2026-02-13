@@ -48,10 +48,6 @@ std::string getBlockName(BlockType type){
             return "REPEAT";
 	case BlockType::FOREVER:
             return "FOREVER";
-        case BlockType::CHANGE_X:
-            return "CHANGE_X";
-        case BlockType::CHANGE_Y:
-            return "CHANGE_Y";
         case BlockType::SET_SIZE:
             return "SET_SIZE";
         case BlockType:: RAND :
@@ -84,8 +80,6 @@ std::string getBlockName(BlockType type){
             return "CHANGE_X";
 	case BlockType::CHANGE_Y:
             return "CHANGE_Y";
-	case BlockType::SET_VAR:
-            return "SET_VAR";
 	case BlockType::BROADCAST:
             return "BROADCAST";
         default:
@@ -230,7 +224,7 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
 	case BlockType::OP_EQUAL:
 	case BlockType::OP_LESS:
 	case BlockType::OP_GREATER:
-	case BlockType::OP_RAND: {
+	case BlockType::RAND: {
 	break;
 	}
 
@@ -297,11 +291,11 @@ void updateScript(Script &script , Sprite &sprite , double deltaTime , vector<st
     }
     else if (currentBlock.type == BlockType::END_REPEAT) {
         int startLine = currentBlock.jumpToIndex;
-	auto it = script.loopStack.find(starLine);
+	auto it = script.loopStack.find(startLine);
         if (it != script.loopStack.end()) {
-            if (it->seconds > 1) {
-		it->seconds -= 1;
-		script.pc = starLine + 1;
+            if (it->second > 1) {
+		it->second -= 1;
+		script.pc = startLine + 1;
         } else {
             script.loopStack.erase(it);
             script.pc++;

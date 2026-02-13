@@ -16,9 +16,10 @@ int main(int argc, char* argv[]){
 
 
     Engine engine;
-    engineInit(engine);
-    initBase(engine, renderer);
     SDL_Event event;
+    engineInit(engine, event);
+    initBase(engine, renderer);
+
 
     while(engine.running){
         engineHandleEvents(engine, event);

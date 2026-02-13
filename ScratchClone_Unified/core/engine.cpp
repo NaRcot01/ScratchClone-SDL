@@ -15,6 +15,7 @@
 void updateScript(Script &script , Sprite &sprite , double deltaTime , std::vector<std::string> &logs);
 
 void startFlagScripts(Engine &engine) {
+    for (auto &sprite : engine.sprites) {
 	for (auto &script : sprite.scripts) {
 		if (script.startEvent == BlockType::ON_FLAG_CLICKED) {
 			script.pc = 0;
@@ -37,7 +38,10 @@ void stopAllScripts(Engine &engine) {
 }
 
 void engineInit(Engine &engine, SDL_Event& event) {
+    (void)event;
     engine.running = true;
+    engine.isRunningScripts = false;
+    engine.isPaused = false;
 }
 
 void engineHandleEvents(Engine &engine, SDL_Event& event) {
@@ -207,7 +211,7 @@ void drawSprites(SDL_Renderer *renderer , const std::vector<Sprite>& sprites) {
 	}
 }
 
-void drawSpritePanels(SDL_Renderer *renderer , const SpritePanel& panel, const std::vector<Sprite>& sprites, int planelSelectedIndex) {
+void drawSpritePanels(SDL_Renderer *renderer , const SpritePanel& panel, const std::vector<Sprite>& sprites, int panelSelectedIndex) {
 	drawSpritePanelBase(renderer, &panel);
 	for (int i=0; i<sprites.size(); i++) {
 	     drawSpritePanel(renderer, &panel, &sprites[i], i, panelSelectedIndex);
@@ -238,7 +242,7 @@ void initSprites(Engine& engine) {
 	Block bLoop; bLoop.type = BlockType::FOREVER; bLoop.jumpToIndex = 0;
 	testScript.blocks.push_back(bLoop);
         
-	Block bForever; bForever,typr = BlockTypr::FOREVER;
+	Block bForever; bForever.type = BlockType::FOREVER;
 	testScript.blocks.push_back(bForever);
 
 	preprocessScript(testScript.blocks);
@@ -270,7 +274,7 @@ void engineDraw(Engine& engine, SDL_Renderer *renderer) {
 
 	drawStage(renderer, &engine.stage);
 	drawSprites(renderer, engine.sprites);
-	drawTopBar(renderer, &engine.topbar, engine.font);
+	drawTopBar(renderer, &engine.topBar, engine.font);
 
 	if (engine.showSpritePanel) {
 		drawSpritePanels(renderer, engine.spritePanel, engine.sprites, engine.panelSelectedIndex);
