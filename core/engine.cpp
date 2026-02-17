@@ -39,6 +39,10 @@ BlockPalette blockPalette;
 Block *active_editing_block = nullptr;
 int active_editing_param_index = -1;
 std::string original_value_on_edit;
+Block* dragged_block = nullptr;
+int drag_offset_x = 0;
+int drag_offset_y = 0;
+
 
 void engineInit(Engine &engine) {
     engine.running = true;
@@ -64,7 +68,40 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
         if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
             if (activeSprite) {
                 activeSprite->dragging = false;
+            }
+            if (dragged_block) {
+                SDL_Point mouse_point = {event.button.x, event.button.y};
 
+                bool block_snapped = false;
+
+                if (activeSprite && SDL_PointInRect(&mouse_point, &scriptArea.rect)) {
+
+                    for (auto& script : activeSprite->scripts) {
+                        if (script.empty()) continue;
+
+                        Block& last_block = script.back();
+
+                        SDL_Rect snap_zone = {
+                                last_block.rect.x,
+                                last_block.rect.y + last_block.rect.h,
+                                last_block.rect.w,
+                                40
+                        };
+
+                        if (SDL_PointInRect(&mouse_point, &snap_zone)) {
+                            script.push_back(*dragged_block);
+                            block_snapped = true;
+                            break;
+                        }
+                    }
+                    if (!block_snapped) {
+                        std::vector<Block> new_script;
+                        new_script.push_back(*dragged_block);
+                        activeSprite->scripts.push_back(new_script);
+                    }
+                }
+                delete dragged_block;
+                dragged_block = nullptr;
             }
         }
         if (active_editing_block && event.type == SDL_KEYDOWN) {
@@ -154,6 +191,10 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 // log :
                 moveSprite(activeSprite, m_x - activeSprite->diff_x_mouse, m_y - activeSprite->diff_y_mouse, &stage);
             }
+            if (dragged_block) {
+                dragged_block->rect.x = event.motion.x - drag_offset_x;
+                dragged_block->rect.y = event.motion.y - drag_offset_y;
+            }
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             if (activeSprite) {
@@ -166,7 +207,18 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
             SDL_Point p = {m_x, m_y};
             bool clicked_on_a_param = false;
             bool click_was_handled = false;
+            if (SDL_PointInRect(&p, &blockPalette.block_panel_rect)) {
+                for (auto& template_block : blockPalette.template_blocks) {
+                    if (SDL_PointInRect(&p, &template_block.rect)) {
+                        dragged_block = new Block(template_block);
 
+                        drag_offset_x = m_x - template_block.rect.x;
+                        drag_offset_y = m_y - template_block.rect.y;
+
+                        click_was_handled = true;
+                    }
+                }
+            }
             if (activeSprite) {
                 for (auto &script: activeSprite->scripts) {
                     for (auto &block: script) {
@@ -440,6 +492,9 @@ void engineDraw(SDL_Renderer *renderer) {
     }
     if (showLibraryPanel) {
         drawLibraryPanel(renderer, &libraryPanel);
+    }
+    if (dragged_block) {
+        drawBlock(renderer, dragged_block, font);
     }
     SDL_RenderPresent(renderer);
 }
