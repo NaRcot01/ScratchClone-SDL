@@ -12,6 +12,7 @@
 #include "../ui/topbar.h"
 #include "../ui/property_panel.h"
 #include "../tools/tinyfiledialogs.h"
+#include "../ui/library_panel.h"
 
 int panelSelectedIndex = -1;
 
@@ -25,13 +26,14 @@ bool showSpritePanel = false;
 TopBar topBar;
 TTF_Font *font;
 PropertyPanel propertyPanel;
-
+LibraryPanel libraryPanel;
+bool showLibraryPanel = false;
 
 void engineInit(Engine &engine) {
     engine.running = true;
 }
 
-void engineHandleEvents(Engine &engine, SDL_Renderer* renderer) {
+void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             engine.running = false;
@@ -111,19 +113,37 @@ void engineHandleEvents(Engine &engine, SDL_Renderer* renderer) {
             if (propertyPanel.visible && handlePropertyPanelClicked(&propertyPanel, activeSprite, m_x, m_y)) {
                 return; // mouse is clicked on property panel so there is no need to check other conditions.
             }
+            if(showLibraryPanel){
+                if(SDL_PointInRect(&p,&libraryPanel.closeBtnRect)){
+                    showLibraryPanel = false;
+                    return;
+                }
 
-            if(showSpritePanel){
-                if(SDL_PointInRect(&p,&spritePanel.buttonRects[0])){
-                    const char* filterPatterns[3] = {"*.png","*.jpg","*.bmp"};
-                    const char* filePath = tinyfd_openFileDialog(
+                for(int i =0;i<libraryPanel.itemRects.size();i++){
+                    if(SDL_PointInRect(&p, &libraryPanel.itemRects[i])){
+                        addNewSpriteFromFile(renderer,libraryPanel.itemPaths[i].c_str(),stage,sprites);
+                        showLibraryPanel = false;
+                        return;
+                    }
+                }
+                continue;
+            }
+            if (showSpritePanel) {
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) {
+                    const char *filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
+                    const char *filePath = tinyfd_openFileDialog(
                             "Choose a Sprite Image",
                             "",
                             3,
                             filterPatterns,
                             "Image Files(JPG, PNG, BMP)",
                             0
-                            );
-                    addNewSpriteFromFile(renderer,filePath,stage,sprites);
+                    );
+                    addNewSpriteFromFile(renderer, filePath, stage, sprites);
+                    return;
+                }
+                if(SDL_PointInRect(&p, &spritePanel.buttonRects[1])){
+                    showLibraryPanel = true;
                     return;
                 }
             }
@@ -253,6 +273,7 @@ void initBase(SDL_Renderer *renderer) {
     initSpritePanel(&spritePanel, renderer);
     initTopBar(&topBar);
     initPropertyPanel(renderer, &propertyPanel, windowConfig.width, windowConfig.height);
+    initLibraryPanel(renderer,&libraryPanel);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -268,6 +289,8 @@ void engineDraw(SDL_Renderer *renderer) {
     if (activeSprite != nullptr) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
     }
-
+    if(showLibraryPanel){
+        drawLibraryPanel(renderer,&libraryPanel);
+    }
     SDL_RenderPresent(renderer);
 }
