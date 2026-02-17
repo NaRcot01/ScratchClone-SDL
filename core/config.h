@@ -5,6 +5,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <string>
+#include <vector>
 
 struct WindowConfig{
     int width = 1600;
@@ -12,8 +13,8 @@ struct WindowConfig{
 };
 
 
-
 extern WindowConfig windowConfig;
 extern std::string ASSETS_PATH;
+extern std::vector<std::string> libraryFiles;
 constexpr int PANEL_ITEM_HEIGHT = 60;
 constexpr int PANEL_ITEM_MARGIN = 10;

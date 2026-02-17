@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <vector>
+#include <random>
+#include <ctime>
 #include "engine.h"
 #include "config.h"
 #include "../ui/sprite_panel.h"
@@ -113,23 +115,23 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
             if (propertyPanel.visible && handlePropertyPanelClicked(&propertyPanel, activeSprite, m_x, m_y)) {
                 return; // mouse is clicked on property panel so there is no need to check other conditions.
             }
-            if(showLibraryPanel){
-                if(SDL_PointInRect(&p,&libraryPanel.closeBtnRect)){
+            if (showLibraryPanel) {
+                if (SDL_PointInRect(&p, &libraryPanel.closeBtnRect)) {
                     showLibraryPanel = false;
                     return;
                 }
 
-                for(int i =0;i<libraryPanel.itemRects.size();i++){
-                    if(SDL_PointInRect(&p, &libraryPanel.itemRects[i])){
-                        addNewSpriteFromFile(renderer,libraryPanel.itemPaths[i].c_str(),stage,sprites);
+                for (int i = 0; i < libraryPanel.itemRects.size(); i++) {
+                    if (SDL_PointInRect(&p, &libraryPanel.itemRects[i])) {
+                        addNewSpriteFromFile(renderer, libraryPanel.itemPaths[i].c_str(), stage, sprites);
                         showLibraryPanel = false;
                         return;
                     }
                 }
                 continue;
             }
-            if (showSpritePanel) {
-                if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) {
+            if (showSpritePanel) { // handle adding sprite through sprite panel.
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) { //upload btn
                     const char *filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
                     const char *filePath = tinyfd_openFileDialog(
                             "Choose a Sprite Image",
@@ -142,9 +144,20 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     addNewSpriteFromFile(renderer, filePath, stage, sprites);
                     return;
                 }
-                if(SDL_PointInRect(&p, &spritePanel.buttonRects[1])){
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[1])) { // library btn
                     showLibraryPanel = true;
                     return;
+                }
+
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[2])) { // random btn
+                    unsigned seed = time(nullptr);
+                    std::mt19937 gen(seed);
+
+                    std::uniform_int_distribution<> distrib(0, libraryFiles.size() - 1);
+                    int random_idx = distrib(gen);
+                    std::string random_path = ASSETS_PATH + libraryFiles[random_idx];
+                    addNewSpriteFromFile(renderer, random_path.c_str(), stage, sprites);
+
                 }
             }
 
@@ -273,7 +286,7 @@ void initBase(SDL_Renderer *renderer) {
     initSpritePanel(&spritePanel, renderer);
     initTopBar(&topBar);
     initPropertyPanel(renderer, &propertyPanel, windowConfig.width, windowConfig.height);
-    initLibraryPanel(renderer,&libraryPanel);
+    initLibraryPanel(renderer, &libraryPanel);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -289,8 +302,8 @@ void engineDraw(SDL_Renderer *renderer) {
     if (activeSprite != nullptr) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
     }
-    if(showLibraryPanel){
-        drawLibraryPanel(renderer,&libraryPanel);
+    if (showLibraryPanel) {
+        drawLibraryPanel(renderer, &libraryPanel);
     }
     SDL_RenderPresent(renderer);
 }

@@ -8,12 +8,6 @@
 #include <SDL2/SDL_image.h>
 #include <iostream>
 
-std::vector<std::string> library_files = {
-        "sprite_lib/cat.png",
-        "sprite_lib/ball.png",
-        "sprite_lib/bat.png",
-};
-
 void initLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
 
     panel->rect.w = windowConfig.width * 0.7;
@@ -37,8 +31,8 @@ void initLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
     int start_x = panel->rect.x + padding;
     int start_y = panel->rect.y + 50;
 
-    for (int i = 0; i < library_files.size(); i++) {
-        std::string fullPath = ASSETS_PATH + library_files[i];
+    for (int i = 0; i < libraryFiles.size(); i++) {
+        std::string fullPath = ASSETS_PATH + libraryFiles[i];
         SDL_Surface *surface = IMG_Load(fullPath.c_str());
         if (surface) {
             panel->itemTextures.push_back(SDL_CreateTextureFromSurface(renderer, surface));
