@@ -15,6 +15,10 @@
 #include "../ui/property_panel.h"
 #include "../tools/tinyfiledialogs.h"
 #include "../ui/library_panel.h"
+#include "../tools/tools.h"
+#include "../ui/script_area.h"
+#include "../ui/block_palette.h"
+
 
 int panelSelectedIndex = -1;
 
@@ -30,6 +34,11 @@ TTF_Font *font;
 PropertyPanel propertyPanel;
 LibraryPanel libraryPanel;
 bool showLibraryPanel = false;
+ScriptArea scriptArea;
+BlockPalette blockPalette;
+Block *active_editing_block = nullptr;
+int active_editing_param_index = -1;
+std::string original_value_on_edit;
 
 void engineInit(Engine &engine) {
     engine.running = true;
@@ -58,7 +67,51 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
 
             }
         }
+        if (active_editing_block && event.type == SDL_KEYDOWN) {
+            SDL_Keycode key = event.key.keysym.sym;
 
+
+            if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
+                if (active_editing_param_index < active_editing_block->parameters.size() &&
+                    active_editing_block->parameters[active_editing_param_index] == 0) {
+                    if (original_value_on_edit != "")
+                        active_editing_block->parameters[active_editing_param_index] = std::stod(
+                                original_value_on_edit);
+                }
+
+                active_editing_block = nullptr;
+                active_editing_param_index = -1;
+                return;
+            }    ParamType current_param_type = ParamType::NUMERIC;
+            if (block_styles.count(active_editing_block->type)) {
+                const auto& param_types = block_styles[active_editing_block->type].param_types;
+                if (active_editing_param_index < param_types.size()) {
+                    current_param_type = param_types[active_editing_param_index];
+                }
+            }
+
+            if (current_param_type == ParamType::NUMERIC) {
+                if (key == SDLK_BACKSPACE && active_editing_block->parameters[active_editing_param_index] != 0) {
+                    active_editing_block->parameters[active_editing_param_index] = (int)active_editing_block->parameters[active_editing_param_index] / 10;
+                } else if (key >= SDLK_0 && key <= SDLK_9) {
+                    int entered_digit = key - SDLK_0;
+                    active_editing_block->parameters[active_editing_param_index] = active_editing_block->parameters[active_editing_param_index] * 10 + entered_digit;
+                }
+            }
+            else if (current_param_type == ParamType::STRING) {
+                if (key == SDLK_BACKSPACE && !active_editing_block->textParam.empty()) {
+                    active_editing_block->textParam.pop_back();
+                } else if ((key >= SDLK_a && key <= SDLK_z) || (key >= SDLK_0 && key <= SDLK_9) || key == SDLK_SPACE) {
+                    char typed_char = (char)key;
+                    if (SDL_GetModState() & KMOD_SHIFT) {
+                        if (typed_char >= 'a' && typed_char <= 'z') typed_char -= 32;
+
+                    }
+                    active_editing_block->textParam += typed_char;
+                }
+            }
+
+        }
         if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_BACKSPACE) {
             for (auto &row: propertyPanel.rows) {
                 if (row.active && !row.value.empty()) {
@@ -104,15 +157,53 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             if (activeSprite) {
-                spriteValidate(activeSprite, &stage);  // it will check if the X,Y of the sprite is correct
+                spriteValidate(activeSprite, &stage);
             }
             bool clickOnPanel = false;
 
             int m_x = event.button.x;
             int m_y = event.button.y;
             SDL_Point p = {m_x, m_y};
+            bool clicked_on_a_param = false;
+            bool click_was_handled = false;
 
+            if (activeSprite) {
+                for (auto &script: activeSprite->scripts) {
+                    for (auto &block: script) {
+
+                        if (!SDL_PointInRect(&p, &block.rect)) continue;
+
+                        for (size_t i = 0; i < block.param_rects.size(); ++i) {
+                            if (SDL_PointInRect(&p, &block.param_rects[i])) {
+
+                                active_editing_block = &block;
+                                active_editing_param_index = i;
+                                clicked_on_a_param = true;
+
+                                if (i < block.parameters.size()) {
+                                    original_value_on_edit = std::to_string((int) block.parameters[i]);
+                                } else {
+                                    original_value_on_edit = block.textParam;
+                                }
+
+                                if (i < block.parameters.size()) {
+                                    block.parameters[i] = 0;
+                                } else {
+                                    block.textParam = "";
+                                }
+                                click_was_handled = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!clicked_on_a_param) {
+                active_editing_block = nullptr;
+                active_editing_param_index = -1;
+            }
             if (propertyPanel.visible && handlePropertyPanelClicked(&propertyPanel, activeSprite, m_x, m_y)) {
+                click_was_handled = true;
                 return; // mouse is clicked on property panel so there is no need to check other conditions.
             }
             if (showLibraryPanel) {
@@ -130,8 +221,8 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 }
                 continue;
             }
-            if (showSpritePanel) { // handle adding sprite through sprite panel.
-                if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) { //upload btn
+            if (!click_was_handled && showSpritePanel) { // handle adding sprite through sprite panel.
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) { //upload btn clicked
                     const char *filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
                     const char *filePath = tinyfd_openFileDialog(
                             "Choose a Sprite Image",
@@ -141,15 +232,30 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                             "Image Files(JPG, PNG, BMP)",
                             0
                     );
-                    addNewSpriteFromFile(renderer, filePath, stage, sprites);
+                    if (filePath) {
+                        std::string sourcePath = filePath;
+                        size_t lastSlash = sourcePath.find_last_of("/\\");
+                        std::string fileName = (lastSlash == std::string::npos) ? sourcePath : sourcePath.substr(
+                                lastSlash + 1);
+
+                        std::string destPathStr = ASSETS_PATH + "sprite_lib/" + fileName;
+                        if (copyFile(sourcePath, destPathStr)) {
+                            // log sprite added to lib
+                            libraryFiles.push_back("sprite_lib/" + fileName);
+                            addItemToLibraryPanel(&libraryPanel, renderer, filePath);
+                        } else {
+                            // log error while adding sprite to lib
+                        }
+                        addNewSpriteFromFile(renderer, filePath, stage, sprites);
+                    }
                     return;
                 }
-                if (SDL_PointInRect(&p, &spritePanel.buttonRects[1])) { // library btn
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[1])) { // library btn clicked
                     showLibraryPanel = true;
                     return;
                 }
 
-                if (SDL_PointInRect(&p, &spritePanel.buttonRects[2])) { // random btn
+                if (SDL_PointInRect(&p, &spritePanel.buttonRects[2])) { // random btn clicked
                     unsigned seed = time(nullptr);
                     std::mt19937 gen(seed);
 
@@ -161,66 +267,83 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 }
             }
 
-            for (int i = 0; i < sprites.size(); i++) { // checks if mouse is clicked on sprite item in sprite panel.
-                if (!showSpritePanel) { break; }
-                Sprite &sprite = sprites[i];
+            if (!click_was_handled && showSpritePanel) {
+                for (int i = 0; i < sprites.size(); i++) { // checks if mouse is clicked on sprite item in sprite panel.
+                    Sprite &sprite = sprites[i];
 
-                SDL_Rect itemRect = {
-                        spritePanel.rect.x + 10,
-                        spritePanel.rect.y + 50 + i * (PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN) + 20,
-                        spritePanel.rect.w - 20,
-                        PANEL_ITEM_HEIGHT
-                };
+                    SDL_Rect itemRect = {
+                            spritePanel.rect.x + 10,
+                            spritePanel.rect.y + 50 + i * (PANEL_ITEM_HEIGHT + PANEL_ITEM_MARGIN) + 20,
+                            spritePanel.rect.w - 20,
+                            PANEL_ITEM_HEIGHT
+                    };
 
-                int deleteBtnSize = PANEL_ITEM_HEIGHT * 0.5;
-                SDL_Rect deleteBtnRect = {
-                        itemRect.x + itemRect.w - deleteBtnSize - 5,
-                        itemRect.y + (itemRect.h - deleteBtnSize) / 2,
-                        deleteBtnSize,
-                        deleteBtnSize
-                };
+                    int deleteBtnSize = PANEL_ITEM_HEIGHT * 0.5;
+                    SDL_Rect deleteBtnRect = {
+                            itemRect.x + itemRect.w - deleteBtnSize - 5,
+                            itemRect.y + (itemRect.h - deleteBtnSize) / 2,
+                            deleteBtnSize,
+                            deleteBtnSize
+                    };
 
-                if (SDL_PointInRect(&p, &deleteBtnRect)) {
-                    if (activeSprite == &sprite) {
-                        activeSprite = NULL;
-                        panelSelectedIndex = -1;
-                        propertyPanel.visible = false;
-                    }
-
-                    sprites.erase(sprites.begin() + i);
-                    clickOnPanel = true;
-                    break;
-                }
-
-                if (m_x >= itemRect.x &&
-                    m_x <= itemRect.x + itemRect.w &&
-                    m_y >= itemRect.y &&
-                    m_y <= itemRect.y + itemRect.h) {
-                    panelSelectedIndex = i;
-                    clickOnPanel = true;
-                    activeSprite = &sprites[i];
-                    propertyPanel.visible = true;
-                    activeSprite->selected = true;
-                    activeSprite->dragging = false;
-                    for (int j = 0; j < sprites.size(); j++) { //make sure other sprites are deselected
-                        if (i != j) {
-                            sprites[j].selected = false;
+                    if (SDL_PointInRect(&p, &deleteBtnRect)) {
+                        if (activeSprite == &sprite) {
+                            click_was_handled = true;
+                            activeSprite = NULL;
+                            panelSelectedIndex = -1;
+                            propertyPanel.visible = false;
                         }
+
+                        sprites.erase(sprites.begin() + i);
+                        clickOnPanel = true;
+                        break;
                     }
-                    break;
+
+                    if (m_x >= itemRect.x &&
+                        m_x <= itemRect.x + itemRect.w &&
+                        m_y >= itemRect.y &&
+                        m_y <= itemRect.y + itemRect.h) {
+                        panelSelectedIndex = i;
+                        clickOnPanel = true;
+                        activeSprite = &sprites[i];
+                        propertyPanel.visible = true;
+                        activeSprite->selected = true;
+                        activeSprite->dragging = false;
+                        click_was_handled = true;
+                        for (int j = 0; j < sprites.size(); j++) { //make sure other sprites are deselected
+                            if (i != j) {
+                                sprites[j].selected = false;
+                            }
+                        }
+                        break;
+                    }
                 }
             }
-            if (!clickOnPanel) { // checks if mouse is clicked on sprite on the stage.
-                activeSprite = NULL;
-                panelSelectedIndex = -1;
-                propertyPanel.visible = false;
+            if (!click_was_handled && (SDL_PointInRect(&p, &blockPalette.category_menu_rect) ||
+                                       SDL_PointInRect(&p, &blockPalette.block_panel_rect) ||
+                                       SDL_PointInRect(&p, &scriptArea.rect))){
+                click_was_handled = true;
+            }
+            if (!click_was_handled) {
+                for (int i = 0; i < topBar.buttonCount; i++) {
+                    TopBarButton &btn = topBar.buttons[i];
+                    if (btn.isClicked(m_x, m_y)) {
+                        if (btn.type == BTN_SPRITE_PANEL) {
+                            showSpritePanel = !showSpritePanel;
+                            click_was_handled = true;
+                        }
+                    }
+                }
+            }
 
+            if (!click_was_handled) { // checks if mouse is clicked on sprite on the stage.
                 for (int i = 0; i < sprites.size(); i++) {
                     Sprite &sprite = sprites[i];
                     if (!sprite.show) { continue; } // if the sprite is hidden, then it is unclickable on the stage!
                     sprite.selected = false;
                     sprite.dragging = false;
                     if (isSpriteClicked(m_x, m_y, &sprite)) {
+                        click_was_handled = true;
                         sprite.selected = true;
                         sprite.dragging = true;
                         std::cout << " sprite clicked " << std::endl;
@@ -233,14 +356,11 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
-
-            for (int i = 0; i < topBar.buttonCount; i++) {
-                TopBarButton &btn = topBar.buttons[i];
-                if (btn.isClicked(m_x, m_y)) {
-                    if (btn.type == BTN_SPRITE_PANEL) {
-                        showSpritePanel = !showSpritePanel;
-                    }
-                }
+            if(!click_was_handled){
+                activeSprite = NULL;
+                panelSelectedIndex = -1;
+                propertyPanel.visible = false;
+                active_editing_block = nullptr;
             }
         }
     }
@@ -257,6 +377,18 @@ void initSprites(SDL_Renderer *renderer) {
         initSprite(sprites[i], &stage);
         sprites[i].rect.x += 50 * i;
         loadSpriteTexture(renderer, sprites[i], ASSETS_PATH + "test.bmp");
+    }
+    if (!sprites.empty()) {
+
+        std::vector<Block> test_script;
+
+
+        test_script.push_back({BlockType::ON_FLAG_CLICKED, {}, ""});
+        test_script.push_back({BlockType::MOVE, {25}, ""});
+        test_script.push_back({BlockType::SAY, {}, "Hello World!"});
+        test_script.push_back({BlockType::TURN_RIGHT, {90}, ""});
+
+        sprites[0].scripts.push_back(test_script);
     }
 }
 
@@ -287,12 +419,16 @@ void initBase(SDL_Renderer *renderer) {
     initTopBar(&topBar);
     initPropertyPanel(renderer, &propertyPanel, windowConfig.width, windowConfig.height);
     initLibraryPanel(renderer, &libraryPanel);
+    initScriptArea(&scriptArea);
+    initBlockPalette(&blockPalette);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
     SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
     SDL_RenderClear(renderer);
 
+    drawBlockPalette(renderer, &blockPalette, font);
+    drawScriptArea(renderer, &scriptArea, activeSprite, font);
     drawStage(renderer, &stage);
     drawSprites(renderer);
     drawTopBar(renderer, &topBar, font);

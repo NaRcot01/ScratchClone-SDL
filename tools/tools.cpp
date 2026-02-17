@@ -17,3 +17,16 @@ std::string generateRandomName(int length){
     }
     return name;
 }
+
+bool copyFile(std::string sourcePath, std::string destPath){
+    std::ifstream source(sourcePath,std::ios::binary);
+    if(!source){
+        // log : can not add sprite from system files to library
+        return false;
+    }
+
+    std::ofstream dest(destPath,std::ios::binary);
+    dest << source.rdbuf();
+
+    return true;
+}

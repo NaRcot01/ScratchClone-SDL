@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 #include "stage.h"
 #include <vector>
+#include "block.h"
 
 struct Sprite{
     SDL_Rect rect;
@@ -19,6 +20,7 @@ struct Sprite{
     int rotation;
     int size;
     bool show;
+    std::vector<std::vector<Block>> scripts;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

@@ -67,3 +67,33 @@ void drawLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
     }
 }
 
+void addItemToLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, std::string filePath){
+    SDL_Surface* surface = IMG_Load(filePath.c_str());
+    if (!surface) {
+        // log : Could not load new library item: + filePath
+        return;
+    }
+
+    panel->itemTextures.push_back(SDL_CreateTextureFromSurface(renderer, surface));
+    SDL_FreeSurface(surface);
+    panel->itemPaths.push_back(filePath);
+
+
+    int padding = 20;
+    int item_size = 100;
+    int items_per_row = 5;
+    int start_x = panel->rect.x + padding;
+    int start_y = panel->rect.y + 50;
+
+    size_t new_item_index = panel->itemRects.size();
+    int row = new_item_index / items_per_row;
+    int col = new_item_index % items_per_row;
+
+    SDL_Rect item_r = {
+            start_x + col * (item_size + padding),
+            start_y + row * (item_size + padding),
+            item_size,
+            item_size
+    };
+    panel->itemRects.push_back(item_r);
+}

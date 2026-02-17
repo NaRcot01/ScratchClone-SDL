@@ -23,5 +23,4 @@ void initLibraryPanel(SDL_Renderer* renderer, LibraryPanel *panel);
 
 void drawLibraryPanel(SDL_Renderer* renderer, LibraryPanel *panel);
 
-void cleanupLibraryPanel(LibraryPanel *panel);
-
+void addItemToLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, std::string filePath);
