@@ -30,3 +30,7 @@ bool copyFile(std::string sourcePath, std::string destPath){
 
     return true;
 }
+
+bool helperFunc_scriptRemover(const ScriptState& s){
+    return !s.isActive;
+}

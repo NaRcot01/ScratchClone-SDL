@@ -18,4 +18,3 @@ void engineUpdate(Engine& engine);
 void engineDraw(SDL_Renderer* renderer);
 void drawSprites(SDL_Renderer *renderer);
 void drawSpritePanels(SDL_Renderer *renderer);
-void executeScriptsForSprite(Sprite* sprite);

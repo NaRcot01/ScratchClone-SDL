@@ -6,6 +6,7 @@
 #include <vector>
 #include <random>
 #include <ctime>
+#include <algorithm>
 #include "engine.h"
 #include "config.h"
 #include "../ui/sprite_panel.h"
@@ -19,6 +20,7 @@
 #include "../ui/script_area.h"
 #include "../ui/block_palette.h"
 #include "../ui/control_panel.h"
+#include "block_executer.h"
 
 int panelSelectedIndex = -1;
 
@@ -43,6 +45,10 @@ Block* dragged_block = nullptr;
 ControlPanel controlPanel;
 int drag_offset_x = 0;
 int drag_offset_y = 0;
+std::vector<ScriptState> running_scripts;
+std::vector<std::string> script_logs;
+unsigned long long int last_frame_time = 0;
+
 
 
 void engineInit(Engine &engine) {
@@ -69,6 +75,8 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
         if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
             if (activeSprite) {
                 activeSprite->dragging = false;
+                activeSprite->x = activeSprite->rect.x; //  just syncing the params
+                activeSprite->y = activeSprite->rect.y;
             }
             if (dragged_block) {
                 SDL_Point mouse_point = {event.button.x, event.button.y};
@@ -251,13 +259,27 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
-            if (SDL_PointInRect(&p, &controlPanel.green_flag_rect)) {
+            if (SDL_PointInRect(&p, &controlPanel.green_flag_rect)) { // green flag is clicked !
                 engine.is_running_scripts = true;
                 // log : green flag clicked. starting scripts
+                running_scripts.clear();
+                for(int i=0;i<sprites.size();i++){
+                    sprites[i].x = sprites[i].rect.x;
+                    sprites[i].y = sprites[i].rect.y;
+                    sprites[i].direction = sprites[i].rotation;
+                    for(int j =0;j<sprites[i].scripts.size();j++){
+                        auto& script_blocks = sprites[i].scripts[j];
+                        if(!script_blocks.empty() && script_blocks.front().type == BlockType::ON_FLAG_CLICKED){
+                            preprocessScript(script_blocks);
+                            running_scripts.push_back({i,j});
 
+                        }
+                    }
+                }
+                last_frame_time = SDL_GetTicks();
                 click_was_handled = true;
             }
-            if (SDL_PointInRect(&p, &controlPanel.stop_button_rect)) {
+            if (SDL_PointInRect(&p, &controlPanel.stop_button_rect)) { //  stop sign is clicked !
                 engine.is_running_scripts = false;
                 // log : stop button clicked! stoping all scripts
                 click_was_handled = true;
@@ -435,10 +457,28 @@ void engineUpdate(Engine& engine) {
     if(!engine.is_running_scripts){
         return;
     }
-
-    for(auto& sprite : sprites){
-        executeScriptsForSprite(&sprite);
+    unsigned long long int current_time = SDL_GetTicks();
+    double deltaTime = (current_time - last_frame_time) / 1000.0;
+    last_frame_time = current_time;
+    script_logs.clear();
+    for(auto& state : running_scripts){
+        if(state.isActive){
+            Sprite& current_sprite = sprites[state.sprite_index];
+            updateScript(state,current_sprite,deltaTime,script_logs);
+        }
     }
+
+    running_scripts.erase(std::remove_if(running_scripts.begin(),running_scripts.end(),helperFunc_scriptRemover),running_scripts.end());
+
+    for(auto& sprite: sprites){
+        sprite.rect.x = sprite.x;
+        sprite.rect.y = sprite.y;
+        sprite.rotation = sprite.direction;
+
+        updateSpriteSize(&sprite);
+    }
+
+
 }
 
 
@@ -518,8 +558,4 @@ void engineDraw(SDL_Renderer *renderer) {
         drawBlock(renderer, dragged_block, font);
     }
     SDL_RenderPresent(renderer);
-}
-
-void executeScriptsForSprite(Sprite* sprite) {
-
 }

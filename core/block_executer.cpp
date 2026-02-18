@@ -189,7 +189,7 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
     double oldX = sprite.x;
     double oldY = sprite.y;
     double oldDir = sprite.direction;
-    bool oldVis = sprite.isVisible;
+    bool oldVis = sprite.show;
     bool executed = false;
 
     if (currentBlock.type == BlockType::WAIT) {
@@ -253,8 +253,8 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
                          to_string((int)sprite.x) + "," + to_string((int)sprite.y) + ")";
         } else if (std::abs(sprite.direction - oldDir) > 0.001) {
             log_detail = " Dir: (" + to_string((int)oldDir) + " -> " + to_string((int)sprite.direction) + ")";
-        } else if (sprite.isVisible != oldVis) {
-                log_detail = (sprite.isVisible ? " Hidden -> Visible" : " Visible -> Hidden");
+        } else if (sprite.show != oldVis) {
+                log_detail = (sprite.show ? " Hidden -> Visible" : " Visible -> Hidden");
         }
 
         if (!log_detail.empty() || log_cmd != "UNKNOWN") {
