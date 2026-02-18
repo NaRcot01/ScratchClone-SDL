@@ -21,6 +21,10 @@ struct Sprite{
     int size;
     bool show;
     std::vector<std::vector<Block>> scripts;
+
+    double x;
+    double y;
+    double direction = 0;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);
