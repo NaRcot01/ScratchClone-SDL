@@ -18,7 +18,7 @@
 #include "../tools/tools.h"
 #include "../ui/script_area.h"
 #include "../ui/block_palette.h"
-
+#include "../ui/control_panel.h"
 
 int panelSelectedIndex = -1;
 
@@ -40,6 +40,7 @@ Block *active_editing_block = nullptr;
 int active_editing_param_index = -1;
 std::string original_value_on_edit;
 Block* dragged_block = nullptr;
+ControlPanel controlPanel;
 int drag_offset_x = 0;
 int drag_offset_y = 0;
 
@@ -250,6 +251,17 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
+            if (SDL_PointInRect(&p, &controlPanel.green_flag_rect)) {
+                engine.is_running_scripts = true;
+                // log : green flag clicked. starting scripts
+
+                click_was_handled = true;
+            }
+            if (SDL_PointInRect(&p, &controlPanel.stop_button_rect)) {
+                engine.is_running_scripts = false;
+                // log : stop button clicked! stoping all scripts
+                click_was_handled = true;
+            }
             if (!clicked_on_a_param) {
                 active_editing_block = nullptr;
                 active_editing_param_index = -1;
@@ -418,8 +430,15 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
     }
 }
 
-void engineUpdate() {
+void engineUpdate(Engine& engine) {
 
+    if(!engine.is_running_scripts){
+        return;
+    }
+
+    for(auto& sprite : sprites){
+        executeScriptsForSprite(&sprite);
+    }
 }
 
 
@@ -473,6 +492,7 @@ void initBase(SDL_Renderer *renderer) {
     initLibraryPanel(renderer, &libraryPanel);
     initScriptArea(&scriptArea);
     initBlockPalette(&blockPalette);
+    initControlPanel(&controlPanel,renderer);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -484,6 +504,7 @@ void engineDraw(SDL_Renderer *renderer) {
     drawStage(renderer, &stage);
     drawSprites(renderer);
     drawTopBar(renderer, &topBar, font);
+    drawControlPanel(renderer,&controlPanel);
     if (showSpritePanel) {
         drawSpritePanels(renderer);
     }
@@ -497,4 +518,8 @@ void engineDraw(SDL_Renderer *renderer) {
         drawBlock(renderer, dragged_block, font);
     }
     SDL_RenderPresent(renderer);
+}
+
+void executeScriptsForSprite(Sprite* sprite) {
+
 }

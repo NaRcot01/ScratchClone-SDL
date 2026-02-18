@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
 
     while(engine.running){
         engineHandleEvents(engine, renderer);
-        engineUpdate();
+        engineUpdate(engine);
         engineDraw(renderer);
     }
     quitSDL(window,renderer);
