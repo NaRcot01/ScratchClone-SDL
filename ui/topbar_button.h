@@ -10,7 +10,8 @@
 
 
 enum TopBarButtonType{
-    BTN_SPRITE_PANEL
+    BTN_SPRITE_PANEL,
+    BTN_STAGE_PANEL
 };
 
 struct TopBarButton{

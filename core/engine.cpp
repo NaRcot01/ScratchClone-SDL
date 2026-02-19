@@ -21,6 +21,7 @@
 #include "../ui/block_palette.h"
 #include "../ui/control_panel.h"
 #include "block_executer.h"
+#include "../ui/background_panel.h"
 
 int panelSelectedIndex = -1;
 
@@ -48,6 +49,8 @@ int drag_offset_y = 0;
 std::vector<ScriptState> running_scripts;
 std::vector<std::string> script_logs;
 unsigned long long int last_frame_time = 0;
+BackgroundPanel backgroundPanel;
+bool showBGPanel = false;
 
 
 
@@ -405,6 +408,37 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
+            if (!click_was_handled && showBGPanel) {
+                if (SDL_PointInRect(&p, &backgroundPanel.upload_button_rect)) {
+                    const char* filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
+                    const char* filePath = tinyfd_openFileDialog(
+                            "Choose a Backdrop Image",
+                            "", 3, filterPatterns, "Image Files", 0
+                    );
+
+                    addNewBackgroundFromFile(renderer, &stage, filePath);
+                    click_was_handled = true;
+                }
+
+                int current_y = backgroundPanel.upload_button_rect.y + backgroundPanel.upload_button_rect.h + 10;
+                for (int i = 0; i < stage.backgrounds.size(); ++i) {
+                    SDL_Rect item_rect = {
+                            backgroundPanel.rect.x + 10,
+                            current_y,
+                            backgroundPanel.rect.w - 20,
+                            100
+                    };
+
+                    if (SDL_PointInRect(&p, &item_rect)) {
+                        stage.active_background_index = i;
+                        // log :  Active backdrop changed to index: i
+
+                        click_was_handled = true;
+                    }
+                    current_y += item_rect.h + 10;
+                }
+
+            }
             if (!click_was_handled && (SDL_PointInRect(&p, &blockPalette.category_menu_rect) ||
                                        SDL_PointInRect(&p, &blockPalette.block_panel_rect) ||
                                        SDL_PointInRect(&p, &scriptArea.rect))){
@@ -416,6 +450,12 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     if (btn.isClicked(m_x, m_y)) {
                         if (btn.type == BTN_SPRITE_PANEL) {
                             showSpritePanel = !showSpritePanel;
+                            showBGPanel = false;
+                            click_was_handled = true;
+                        }
+                        else if (btn.type == BTN_STAGE_PANEL) {
+                            showBGPanel = !showBGPanel;
+                            showSpritePanel = false;
                             click_was_handled = true;
                         }
                     }
@@ -533,6 +573,7 @@ void initBase(SDL_Renderer *renderer) {
     initScriptArea(&scriptArea);
     initBlockPalette(&blockPalette);
     initControlPanel(&controlPanel,renderer);
+    initBackgroundPanel(&backgroundPanel, renderer);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -548,6 +589,9 @@ void engineDraw(SDL_Renderer *renderer) {
     if (showSpritePanel) {
         drawSpritePanels(renderer);
     }
+    else if(showBGPanel){
+        drawBackgroundPanel(renderer,&backgroundPanel,&stage, font);
+    }
     if (activeSprite != nullptr) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
     }
@@ -557,5 +601,6 @@ void engineDraw(SDL_Renderer *renderer) {
     if (dragged_block) {
         drawBlock(renderer, dragged_block, font);
     }
+
     SDL_RenderPresent(renderer);
 }
