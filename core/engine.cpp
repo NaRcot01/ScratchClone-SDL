@@ -22,6 +22,7 @@
 #include "../ui/control_panel.h"
 #include "block_executer.h"
 #include "../ui/background_panel.h"
+#include "../ui/backdrop_porperty_panel.h"
 
 int panelSelectedIndex = -1;
 
@@ -42,7 +43,7 @@ BlockPalette blockPalette;
 Block *active_editing_block = nullptr;
 int active_editing_param_index = -1;
 std::string original_value_on_edit;
-Block* dragged_block = nullptr;
+Block *dragged_block = nullptr;
 ControlPanel controlPanel;
 int drag_offset_x = 0;
 int drag_offset_y = 0;
@@ -51,7 +52,7 @@ std::vector<std::string> script_logs;
 unsigned long long int last_frame_time = 0;
 BackgroundPanel backgroundPanel;
 bool showBGPanel = false;
-
+BackdropPropertyPanel backdropPropertyPanel;
 
 
 void engineInit(Engine &engine) {
@@ -88,10 +89,10 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
 
                 if (activeSprite && SDL_PointInRect(&mouse_point, &scriptArea.rect)) {
 
-                    for (auto& script : activeSprite->scripts) {
+                    for (auto &script: activeSprite->scripts) {
                         if (script.empty()) continue;
 
-                        Block& last_block = script.back();
+                        Block &last_block = script.back();
 
                         SDL_Rect snap_zone = {
                                 last_block.rect.x,
@@ -131,9 +132,10 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 active_editing_block = nullptr;
                 active_editing_param_index = -1;
                 return;
-            }    ParamType current_param_type = ParamType::NUMERIC;
+            }
+            ParamType current_param_type = ParamType::NUMERIC;
             if (block_styles.count(active_editing_block->type)) {
-                const auto& param_types = block_styles[active_editing_block->type].param_types;
+                const auto &param_types = block_styles[active_editing_block->type].param_types;
                 if (active_editing_param_index < param_types.size()) {
                     current_param_type = param_types[active_editing_param_index];
                 }
@@ -141,17 +143,18 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
 
             if (current_param_type == ParamType::NUMERIC) {
                 if (key == SDLK_BACKSPACE && active_editing_block->parameters[active_editing_param_index] != 0) {
-                    active_editing_block->parameters[active_editing_param_index] = (int)active_editing_block->parameters[active_editing_param_index] / 10;
+                    active_editing_block->parameters[active_editing_param_index] =
+                            (int) active_editing_block->parameters[active_editing_param_index] / 10;
                 } else if (key >= SDLK_0 && key <= SDLK_9) {
                     int entered_digit = key - SDLK_0;
-                    active_editing_block->parameters[active_editing_param_index] = active_editing_block->parameters[active_editing_param_index] * 10 + entered_digit;
+                    active_editing_block->parameters[active_editing_param_index] =
+                            active_editing_block->parameters[active_editing_param_index] * 10 + entered_digit;
                 }
-            }
-            else if (current_param_type == ParamType::STRING) {
+            } else if (current_param_type == ParamType::STRING) {
                 if (key == SDLK_BACKSPACE && !active_editing_block->textParam.empty()) {
                     active_editing_block->textParam.pop_back();
                 } else if ((key >= SDLK_a && key <= SDLK_z) || (key >= SDLK_0 && key <= SDLK_9) || key == SDLK_SPACE) {
-                    char typed_char = (char)key;
+                    char typed_char = (char) key;
                     if (SDL_GetModState() & KMOD_SHIFT) {
                         if (typed_char >= 'a' && typed_char <= 'z') typed_char -= 32;
 
@@ -160,6 +163,19 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 }
             }
 
+        } else if (event.type == SDL_KEYDOWN && backdropPropertyPanel.is_editing_name &&
+                   stage.active_background_index != -1) {
+            Backdrop &active_backdrop = stage.backgrounds[stage.active_background_index];
+            SDL_Keycode key = event.key.keysym.sym;
+
+            if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
+                backdropPropertyPanel.is_editing_name = false;
+            } else if (key == SDLK_BACKSPACE && !active_backdrop.name.empty()) {
+                active_backdrop.name.pop_back();
+            } else if ((key >= SDLK_a && key <= SDLK_z) || (key >= SDLK_0 && key <= SDLK_9) || key == SDLK_SPACE) {
+                active_backdrop.name += (char) key;
+            }
+            return;
         }
         if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_BACKSPACE) {
             for (auto &row: propertyPanel.rows) {
@@ -220,7 +236,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
             bool clicked_on_a_param = false;
             bool click_was_handled = false;
             if (SDL_PointInRect(&p, &blockPalette.block_panel_rect)) {
-                for (auto& template_block : blockPalette.template_blocks) {
+                for (auto &template_block: blockPalette.template_blocks) {
                     if (SDL_PointInRect(&p, &template_block.rect)) {
                         dragged_block = new Block(template_block);
 
@@ -266,15 +282,15 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 engine.is_running_scripts = true;
                 // log : green flag clicked. starting scripts
                 running_scripts.clear();
-                for(int i=0;i<sprites.size();i++){
+                for (int i = 0; i < sprites.size(); i++) {
                     sprites[i].x = sprites[i].rect.x;
                     sprites[i].y = sprites[i].rect.y;
                     sprites[i].direction = sprites[i].rotation;
-                    for(int j =0;j<sprites[i].scripts.size();j++){
-                        auto& script_blocks = sprites[i].scripts[j];
-                        if(!script_blocks.empty() && script_blocks.front().type == BlockType::ON_FLAG_CLICKED){
+                    for (int j = 0; j < sprites[i].scripts.size(); j++) {
+                        auto &script_blocks = sprites[i].scripts[j];
+                        if (!script_blocks.empty() && script_blocks.front().type == BlockType::ON_FLAG_CLICKED) {
                             preprocessScript(script_blocks);
-                            running_scripts.push_back({i,j});
+                            running_scripts.push_back({i, j});
 
                         }
                     }
@@ -408,15 +424,48 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
+            if(!click_was_handled && backdropPropertyPanel.is_visible && SDL_PointInRect(&p, &backdropPropertyPanel.delete_button_rect)){ // delete stage backdrop
+                if (stage.active_background_index != -1) {
+                    int index_to_delete = stage.active_background_index;
+
+                    if (stage.backgrounds[index_to_delete].texture) {
+                        SDL_DestroyTexture(stage.backgrounds[index_to_delete].texture);
+                    }
+
+                    stage.backgrounds.erase(stage.backgrounds.begin() + index_to_delete);
+
+
+                    if (!stage.backgrounds.empty()) {
+                        stage.active_background_index = 0;
+                    }
+
+                    else {
+                        stage.active_background_index = -1;
+                        backdropPropertyPanel.is_visible = false;
+                    }
+
+                    // log :  Backdrop at index (index_to_delete)  deleted.
+                }
+
+                click_was_handled = true;
+            }
             if (!click_was_handled && showBGPanel) {
-                if (SDL_PointInRect(&p, &backgroundPanel.upload_button_rect)) {
-                    const char* filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
-                    const char* filePath = tinyfd_openFileDialog(
+                if (SDL_PointInRect(&p, &backgroundPanel.upload_button_rect)) { // upload stage image
+                    const char *filterPatterns[3] = {"*.png", "*.jpg", "*.bmp"};
+                    const char *filePath = tinyfd_openFileDialog(
                             "Choose a Backdrop Image",
                             "", 3, filterPatterns, "Image Files", 0
                     );
 
                     addNewBackgroundFromFile(renderer, &stage, filePath);
+                    click_was_handled = true;
+                }
+
+                if (backdropPropertyPanel.is_visible && SDL_PointInRect(&p, &backdropPropertyPanel.name_input_rect)) { // change stage backdrop name
+                    backdropPropertyPanel.is_editing_name = true;
+                    if (stage.active_background_index != -1) {
+                        stage.backgrounds[stage.active_background_index].name = "";
+                    }
                     click_was_handled = true;
                 }
 
@@ -429,19 +478,23 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                             100
                     };
 
-                    if (SDL_PointInRect(&p, &item_rect)) {
+                    if (SDL_PointInRect(&p, &item_rect)) { // change active backdrop
                         stage.active_background_index = i;
+                        backdropPropertyPanel.is_visible = true;
+                        backdropPropertyPanel.is_editing_name = false;
                         // log :  Active backdrop changed to index: i
 
                         click_was_handled = true;
                     }
                     current_y += item_rect.h + 10;
                 }
-
+                if (backdropPropertyPanel.is_visible && SDL_PointInRect(&p, &backdropPropertyPanel.rect)) {
+                    click_was_handled = true;
+                }
             }
             if (!click_was_handled && (SDL_PointInRect(&p, &blockPalette.category_menu_rect) ||
                                        SDL_PointInRect(&p, &blockPalette.block_panel_rect) ||
-                                       SDL_PointInRect(&p, &scriptArea.rect))){
+                                       SDL_PointInRect(&p, &scriptArea.rect))) {
                 click_was_handled = true;
             }
             if (!click_was_handled) {
@@ -452,8 +505,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                             showSpritePanel = !showSpritePanel;
                             showBGPanel = false;
                             click_was_handled = true;
-                        }
-                        else if (btn.type == BTN_STAGE_PANEL) {
+                        } else if (btn.type == BTN_STAGE_PANEL) {
                             showBGPanel = !showBGPanel;
                             showSpritePanel = false;
                             click_was_handled = true;
@@ -482,7 +534,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
-            if(!click_was_handled){
+            if (!click_was_handled) {
                 activeSprite = NULL;
                 panelSelectedIndex = -1;
                 propertyPanel.visible = false;
@@ -492,25 +544,26 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
     }
 }
 
-void engineUpdate(Engine& engine) {
+void engineUpdate(Engine &engine) {
 
-    if(!engine.is_running_scripts){
+    if (!engine.is_running_scripts) {
         return;
     }
     unsigned long long int current_time = SDL_GetTicks();
     double deltaTime = (current_time - last_frame_time) / 1000.0;
     last_frame_time = current_time;
     script_logs.clear();
-    for(auto& state : running_scripts){
-        if(state.isActive){
-            Sprite& current_sprite = sprites[state.sprite_index];
-            updateScript(state,current_sprite,deltaTime,script_logs);
+    for (auto &state: running_scripts) {
+        if (state.isActive) {
+            Sprite &current_sprite = sprites[state.sprite_index];
+            updateScript(state, current_sprite, deltaTime, script_logs);
         }
     }
 
-    running_scripts.erase(std::remove_if(running_scripts.begin(),running_scripts.end(),helperFunc_scriptRemover),running_scripts.end());
+    running_scripts.erase(std::remove_if(running_scripts.begin(), running_scripts.end(), helperFunc_scriptRemover),
+                          running_scripts.end());
 
-    for(auto& sprite: sprites){
+    for (auto &sprite: sprites) {
         sprite.rect.x = sprite.x;
         sprite.rect.y = sprite.y;
         sprite.rotation = sprite.direction;
@@ -572,8 +625,9 @@ void initBase(SDL_Renderer *renderer) {
     initLibraryPanel(renderer, &libraryPanel);
     initScriptArea(&scriptArea);
     initBlockPalette(&blockPalette);
-    initControlPanel(&controlPanel,renderer);
+    initControlPanel(&controlPanel, renderer);
     initBackgroundPanel(&backgroundPanel, renderer);
+    initBackdropPropertyPanel(&backdropPropertyPanel, renderer);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -585,12 +639,15 @@ void engineDraw(SDL_Renderer *renderer) {
     drawStage(renderer, &stage);
     drawSprites(renderer);
     drawTopBar(renderer, &topBar, font);
-    drawControlPanel(renderer,&controlPanel);
+    drawControlPanel(renderer, &controlPanel);
     if (showSpritePanel) {
         drawSpritePanels(renderer);
-    }
-    else if(showBGPanel){
-        drawBackgroundPanel(renderer,&backgroundPanel,&stage, font);
+    } else if (showBGPanel) {
+        drawBackgroundPanel(renderer, &backgroundPanel, &stage, font);
+        if (stage.active_background_index != -1) {
+            const auto &active_backdrop = stage.backgrounds[stage.active_background_index];
+            drawBackdropPropertyPanel(renderer, &backdropPropertyPanel, active_backdrop.name, font);
+        }
     }
     if (activeSprite != nullptr) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
