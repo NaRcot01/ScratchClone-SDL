@@ -12,18 +12,27 @@ void initTopBar(TopBar* bar){
     bar->rect.h = windowConfig.height * 0.04;
     bar->buttonCount = 0;
 
+    int currentX = 10;
+    int btnWidth = bar->rect.w/12;
 
+    auto addBtn = [&](TopBarButtonType type, std::string text) {
+	if (bar->buttonCount >= TOPBAR_MAX_BUTTONS) return;
+	TopBarButton btn;
+	btn.rect.x =currentX;
+	btn.rect.y = 5;
+	btn.rect.h = bar->rect.h - 10;
+	btn.rect.w = btnWidth;
+	btn.type = type;
+	btn.text = text;
+	bar->buttons[bar->buttonCount++] = btn;
+	currentX += btnWidth + 10;
+    };
 
-    TopBarButton btn;
-    btn.rect.x = 10;
-    btn.rect.y = 5;
-    btn.rect.h = bar->rect.h - 10;
-    btn.rect.w = bar->rect.w / 20;
-    btn.type = BTN_SPRITE_PANEL;
-    btn.text = "Sprite Panel";
-
-    bar->buttons[bar->buttonCount] = btn;
-    bar->buttonCount++;
+    addBtn(BTN_SPRITE_PANEL, "Sprite Panel");
+    addBtn(BTN_NEW_PROJECT, "New");
+    addBtn(BTN_SAVE_PROJECT, "Save");
+    addBtn(BTN_LOAD_PROJECT, "Load");
+    addBtn(BTN_PLAY,"Play");
 }
 
 

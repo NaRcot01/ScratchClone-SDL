@@ -19,6 +19,8 @@ struct Engine{
     TopBar topBar;
     PropertyPanel propertyPanel;
 
+    std::string currentProjectPath;
+
     Sprite* activeSprite = nullptr;
     int panelSelectedIndex = -1;
     bool showSpritePanel = false;
@@ -27,7 +29,13 @@ struct Engine{
 
     bool isRunningScripts = false;
     bool isPaused = false;
+    
+    bool requestNewProject = false;
+    bool requestLoadProject = false;
 };
+
+bool engineSaveProject(const Engine& engine, const std::string& path);
+bool engineLoadProject(Engine& engine, const std::string& path);
 
 void initBase(Engine &engine, SDL_Renderer *renderer);
 void engineInit(Engine &engine, SDL_Event& event);
@@ -35,5 +43,6 @@ void engineHandleEvents(Engine &engine, SDL_Event& event);
 void engineUpdate(Engine &engine);
 void engineDraw(Engine &engine, SDL_Renderer* renderer);
 
+void initSprites(Engine& engine);
 void drawSprites(SDL_Renderer *renderer, const std::vector<Sprite>& sprites);
 void drawSpritePanels(SDL_Renderer *renderer, const SpritePanel *panel, const std::vector<Sprite>& sprites, int panelSelectedIndex);

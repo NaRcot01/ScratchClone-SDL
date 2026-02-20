@@ -23,6 +23,30 @@ int main(int argc, char* argv[]){
 
     while(engine.running){
         engineHandleEvents(engine, event);
+	
+	if (engine.requestNewProject) {
+		engine.sprites.clear();
+		initSprites(engine);
+		for (auto &sprite : engine.sprites) {
+			loadSpriteTexture(renderer, sprite, ASSETS_PATH + "test.bmp");
+		}
+		engine.requestNewProject = false;
+		engine.activeSprite = nullptr;
+		engine.panelSelectedIndex = -1;
+		engine.propertyPanel.visible = false;
+		}
+
+		if (engine.requestLoadProject) {
+			if (engineLoadProject(engine, "project.sav")) {
+				for (auto &sprite : engine.sprites) {
+					loadSpriteTexture(renderer, sprite, ASSETS_PATH + "test.bmp");
+				}
+			}
+			engine.requestLoadProject = false;
+			engine.activeSprite = nullptr;
+			engine.panelSelectedIndex = -1;
+			engine.propertyPanel.visible = false;
+		}
         engineUpdate(engine);
         engineDraw(engine, renderer);
     }

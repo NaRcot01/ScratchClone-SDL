@@ -16,7 +16,7 @@ add_executable(ScratchClone_Unified
     ui/property_panel.cpp ui/property_panel.h ui/font.cpp ui/font.h
     core/engine.cpp core/engine.h core/sdl_init.cpp core/sdl_init.h
     core/config.cpp core/config.h core/physics.cpp core/physics.h
-    tools/tools.cpp tools/tools.h
+    tools/tools.cpp tools/tools.h core/project_io.cpp core/project_io.h
 )
 
 target_compile_definitions(ScratchClone_Unified PRIVATE SDL_MAIN_HANDLED)

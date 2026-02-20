@@ -11,6 +11,21 @@
 #include "../ui/stage.h"
 #include "../ui/topbar.h"
 #include "../ui/property_panel.h"
+#include "project_io.h"
+
+bool engineSaveProjects(const Engine& engine, const std::string& path) {
+	return saveProject(engine, path);
+}
+
+bool engineLoadProject(Engine& engine, const std::string& path) {
+	bool ok = loadProject(engine, path);
+	if (ok) {
+		for (auto& s : engine.sprites) {
+			spriteValidate(&s, &engine.stage);
+		}
+	}
+	return ok;
+}
 
 void updateScript(Script &script , Sprite &sprite , double deltaTime , std::vector<std::string> &logs);
 
@@ -174,9 +189,28 @@ void engineHandleEvents(Engine &engine, SDL_Event& event) {
 
             for (int i = 0; i < engine.topBar.buttonCount; i++) {
                 if (engine.topBar.buttons[i].isClicked(m_x, m_y)) {
-                    if (engine.topBar.buttons[i].type == BTN_SPRITE_PANEL) {
+		    TopBarButtonType type = engine.topBar.buttons[i].type;
+                    if (type == BTN_SPRITE_PANEL) {
                         engine.showSpritePanel = !engine.showSpritePanel;
                     }
+		    else if (type == BTN_NEW_PROJECT) {
+			engine.requestNewProject = true;
+		    }
+		    else if (type == BTN_SAVE_PROJECT) {
+			engineSaveProject(engine, "Project.sav");
+		    }
+		    else if (type == BTN_LOAD_PROJECT) {
+			engine.requestLoadProject = true;
+		    }
+		    else if (type == BTN_PLAY) {
+			startFlagScripts(engine);
+		    }
+		    else if (type == BTN_PAUSE) {
+			engine.isPaused = !engine.isPaused;
+		    }
+		    else if (type == BTN_STOP) {
+			stopAllScripts(engine);
+		    }
                 }
             }
         }

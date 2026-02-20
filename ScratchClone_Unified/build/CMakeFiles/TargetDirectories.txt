@@ -1,0 +1,3 @@
+C:/users/tabar/clionprojects/scratchclone-sdl/scratchclone_unified/build/CMakeFiles/ScratchClone_Unified.dir
+C:/users/tabar/clionprojects/scratchclone-sdl/scratchclone_unified/build/CMakeFiles/edit_cache.dir
+C:/users/tabar/clionprojects/scratchclone-sdl/scratchclone_unified/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/ScratchClone_Unified.dir/BlockExecutor.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/BlockExecutor.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/core/config.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/core/config.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/core/engine.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/core/engine.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/core/physics.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/core/physics.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/core/project_io.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/core/project_io.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/core/sdl_init.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/core/sdl_init.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/main.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/main.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/tools/tools.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/tools/tools.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/font.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/font.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/property_panel.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/property_panel.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/sprite.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/sprite.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/sprite_panel.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/sprite_panel.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/stage.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/stage.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/topbar.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/topbar.cpp.obj.d"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/topbar_button.cpp.obj"
+  "CMakeFiles/ScratchClone_Unified.dir/ui/topbar_button.cpp.obj.d"
+  "ScratchClone_Unified.exe"
+  "ScratchClone_Unified.exe.manifest"
+  "ScratchClone_Unified.pdb"
+  "libScratchClone_Unified.dll.a"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/ScratchClone_Unified.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

@@ -1,7 +1,3 @@
-//
-// Created by jack on 2/4/2026.
-//
-
 #pragma once
 #include <SDL2/SDL.h>
 #include <string>
@@ -10,7 +6,13 @@
 
 
 enum TopBarButtonType{
-    BTN_SPRITE_PANEL
+    BTN_SPRITE_PANEL,
+    BTN_NEW_PROJECT,
+    BTN_SAVE_PROJECT,
+    BTN_LOAD_PROJECT,
+    BTN_PLAY,
+    BTN_PAUSE,
+    BTN_STOP
 };
 
 struct TopBarButton{
