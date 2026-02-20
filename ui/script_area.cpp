@@ -129,22 +129,9 @@ void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSpri
         return;
     }
 
-    int current_y = area->rect.y + 20 - area->scroll_offset_y;
-
-    for (auto& script : activeSprite->scripts) {
-        for (auto& block : script) {
-
-            block.rect = {
-                    area->rect.x + 20,
-                    current_y,
-                    220,
-                    40
-            };
-
-            drawBlock(renderer, &block, font);
-
-            current_y += block.rect.h + 5;
+    for (const auto& script : activeSprite->scripts) {
+        for (const auto& block : script) {
+            drawBlock(renderer, const_cast<Block*>(&block), font);
         }
-        current_y += 30;
     }
 }
