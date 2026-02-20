@@ -54,8 +54,6 @@ void drawSpritePanelBase(SDL_Renderer *renderer, const SpritePanel *panel) {
 
     for (int i = 0; i < 4; i++) {
         if(panel->buttonTextures[i]){
-            SDL_SetRenderDrawColor(renderer,255,255,255,255);
-            SDL_RenderFillRect(renderer,&panel->buttonRects[i]);
             SDL_RenderCopy(renderer,panel->buttonTextures[i], nullptr,&panel->buttonRects[i]);
         }
     }

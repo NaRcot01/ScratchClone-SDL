@@ -13,12 +13,47 @@ void initBackgroundPanel(BackgroundPanel* panel, SDL_Renderer* renderer) {
     panel->rect.h = windowConfig.height * 0.96;
 
 
-    panel->upload_button_rect = {panel->rect.x + 10, panel->rect.y + 10, 40, 40};
-
+    panel->upload_button_rect = {panel->rect.x + 50, panel->rect.y + 20, 35, 35};
     SDL_Surface* upload_surface = SDL_LoadBMP((ASSETS_PATH + "icons/upload.bmp").c_str());
     if (upload_surface) {
         panel->upload_button_texture = SDL_CreateTextureFromSurface(renderer, upload_surface);
         SDL_FreeSurface(upload_surface);
+    }
+
+    panel->library_button_rect = {
+            panel->upload_button_rect.x + panel->upload_button_rect.w + 30,
+            panel->rect.y + 20,
+            35, 35
+    };
+
+    SDL_Surface* library_surface = SDL_LoadBMP((ASSETS_PATH + "icons/library.bmp").c_str());
+    if (library_surface) {
+        panel->library_button_texture = SDL_CreateTextureFromSurface(renderer, library_surface);
+        SDL_FreeSurface(library_surface);
+    }
+
+    panel->random_button_rect = {
+            panel->library_button_rect.x + panel->library_button_rect.w + 30,
+            panel->rect.y + 20,
+            35, 35
+    };
+
+    SDL_Surface* random_surface = SDL_LoadBMP((ASSETS_PATH + "icons/random.bmp").c_str());
+    if (random_surface) {
+        panel->random_button_texture = SDL_CreateTextureFromSurface(renderer, random_surface);
+        SDL_FreeSurface(random_surface);
+    }
+
+    panel->paint_button_rect = {
+            panel->random_button_rect.x + panel->random_button_rect.w + 30,
+            panel->rect.y + 20,
+            35, 35
+    };
+
+    SDL_Surface* paint_surface = SDL_LoadBMP((ASSETS_PATH + "icons/paint.bmp").c_str());
+    if (paint_surface) {
+        panel->paint_button_texture = SDL_CreateTextureFromSurface(renderer, paint_surface);
+        SDL_FreeSurface(paint_surface);
     }
 }
 
@@ -30,6 +65,16 @@ void drawBackgroundPanel(SDL_Renderer* renderer, const BackgroundPanel* panel, S
 
     if (panel->upload_button_texture) {
         SDL_RenderCopy(renderer, panel->upload_button_texture, NULL, &panel->upload_button_rect);
+    }
+
+    if (panel->library_button_texture) {
+        SDL_RenderCopy(renderer, panel->library_button_texture, NULL, &panel->library_button_rect);
+    }
+    if (panel->random_button_texture) {
+        SDL_RenderCopy(renderer, panel->random_button_texture, NULL, &panel->random_button_rect);
+    }
+    if (panel->paint_button_texture) {
+        SDL_RenderCopy(renderer, panel->paint_button_texture, NULL, &panel->paint_button_rect);
     }
 
     int current_y = panel->upload_button_rect.y + panel->upload_button_rect.h + 10;

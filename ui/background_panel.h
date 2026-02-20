@@ -14,6 +14,12 @@ struct BackgroundPanel {
 
     SDL_Rect upload_button_rect;
     SDL_Texture *upload_button_texture;
+    SDL_Rect library_button_rect;
+    SDL_Texture* library_button_texture;
+    SDL_Rect random_button_rect;
+    SDL_Texture* random_button_texture;
+    SDL_Rect paint_button_rect;
+    SDL_Texture* paint_button_texture;
 };
 
 void initBackgroundPanel(BackgroundPanel *panel, SDL_Renderer *renderer);

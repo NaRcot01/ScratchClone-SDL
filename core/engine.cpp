@@ -53,6 +53,7 @@ unsigned long long int last_frame_time = 0;
 BackgroundPanel backgroundPanel;
 bool showBGPanel = false;
 BackdropPropertyPanel backdropPropertyPanel;
+bool showBackdropLibrary = false;
 
 
 void engineInit(Engine &engine) {
@@ -311,20 +312,29 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 click_was_handled = true;
                 return; // mouse is clicked on property panel so there is no need to check other conditions.
             }
-            if (showLibraryPanel) {
+            if (showLibraryPanel || showBackdropLibrary) {
                 if (SDL_PointInRect(&p, &libraryPanel.closeBtnRect)) {
                     showLibraryPanel = false;
+                    showBackdropLibrary = false;
                     return;
                 }
 
-                for (int i = 0; i < libraryPanel.itemRects.size(); i++) {
+                for (size_t i = 0; i < libraryPanel.itemRects.size(); ++i) {
                     if (SDL_PointInRect(&p, &libraryPanel.itemRects[i])) {
-                        addNewSpriteFromFile(renderer, libraryPanel.itemPaths[i].c_str(), stage, sprites);
+                        const std::string& path = libraryPanel.itemPaths[i];
+
+                        if (showBackdropLibrary) {
+                            addNewBackgroundFromFile(renderer, &stage, path.c_str());
+                        }
+                        else {
+                            addNewSpriteFromFile(renderer, path.c_str(),stage,sprites);
+                        }
+
                         showLibraryPanel = false;
+                        showBackdropLibrary = false;
                         return;
                     }
                 }
-                continue;
             }
             if (!click_was_handled && showSpritePanel) { // handle adding sprite through sprite panel.
                 if (SDL_PointInRect(&p, &spritePanel.buttonRects[0])) { //upload btn clicked
@@ -357,6 +367,9 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                 }
                 if (SDL_PointInRect(&p, &spritePanel.buttonRects[1])) { // library btn clicked
                     showLibraryPanel = true;
+                    cleanupLibraryPanel(&libraryPanel);
+                    initLibraryPanel(&libraryPanel, renderer, libraryFiles);
+                    click_was_handled = true;
                     return;
                 }
 
@@ -459,6 +472,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
 
                     addNewBackgroundFromFile(renderer, &stage, filePath);
                     click_was_handled = true;
+                    return;
                 }
 
                 if (backdropPropertyPanel.is_visible && SDL_PointInRect(&p, &backdropPropertyPanel.name_input_rect)) { // change stage backdrop name
@@ -467,6 +481,24 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                         stage.backgrounds[stage.active_background_index].name = "";
                     }
                     click_was_handled = true;
+                    return;
+                }
+
+                if (SDL_PointInRect(&p, &backgroundPanel.library_button_rect)) {
+                    showBackdropLibrary = true;
+                    cleanupLibraryPanel(&libraryPanel);
+                    initLibraryPanel(&libraryPanel, renderer, backdrop_library_files);
+                    click_was_handled = true;
+                    return;
+                }
+                if (SDL_PointInRect(&p, &backgroundPanel.random_button_rect)) {
+                    unsigned seed = time(nullptr);
+                    std::mt19937 gen(seed);
+
+                    std::uniform_int_distribution<> distrib(0, libraryFiles.size() - 1);
+                    int random_idx = distrib(gen);
+                    std::string random_path = ASSETS_PATH + backdrop_library_files[random_idx];
+                    addNewBackgroundFromFile(renderer, &stage, random_path.c_str());
                 }
 
                 int current_y = backgroundPanel.upload_button_rect.y + backgroundPanel.upload_button_rect.h + 10;
@@ -497,7 +529,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                                        SDL_PointInRect(&p, &scriptArea.rect))) {
                 click_was_handled = true;
             }
-            if (!click_was_handled) {
+            if (!click_was_handled) { //  checks topbar buttons
                 for (int i = 0; i < topBar.buttonCount; i++) {
                     TopBarButton &btn = topBar.buttons[i];
                     if (btn.isClicked(m_x, m_y)) {
@@ -534,7 +566,7 @@ void engineHandleEvents(Engine &engine, SDL_Renderer *renderer) {
                     }
                 }
             }
-            if (!click_was_handled) {
+            if (!click_was_handled) { // last check : no meaningful click
                 activeSprite = NULL;
                 panelSelectedIndex = -1;
                 propertyPanel.visible = false;
@@ -622,7 +654,7 @@ void initBase(SDL_Renderer *renderer) {
     initSpritePanel(&spritePanel, renderer);
     initTopBar(&topBar);
     initPropertyPanel(renderer, &propertyPanel, windowConfig.width, windowConfig.height);
-    initLibraryPanel(renderer, &libraryPanel);
+    initLibraryPanel(&libraryPanel,renderer,libraryFiles);
     initScriptArea(&scriptArea);
     initBlockPalette(&blockPalette);
     initControlPanel(&controlPanel, renderer);
@@ -653,6 +685,9 @@ void engineDraw(SDL_Renderer *renderer) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
     }
     if (showLibraryPanel) {
+        drawLibraryPanel(renderer, &libraryPanel);
+    }
+    if(showBackdropLibrary){
         drawLibraryPanel(renderer, &libraryPanel);
     }
     if (dragged_block) {

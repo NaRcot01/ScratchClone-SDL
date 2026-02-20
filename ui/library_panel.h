@@ -19,8 +19,10 @@ struct LibraryPanel {
 };
 
 
-void initLibraryPanel(SDL_Renderer* renderer, LibraryPanel *panel);
+void initLibraryPanel(LibraryPanel *panel, SDL_Renderer *renderer, const std::vector<std::string> &files);
 
-void drawLibraryPanel(SDL_Renderer* renderer, LibraryPanel *panel);
+void drawLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel);
 
-void addItemToLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, std::string filePath);
+void addItemToLibraryPanel(LibraryPanel *panel, SDL_Renderer *renderer, std::string filePath);
+
+void cleanupLibraryPanel(LibraryPanel *panel);

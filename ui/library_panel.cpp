@@ -8,7 +8,7 @@
 #include <SDL2/SDL_image.h>
 #include <iostream>
 
-void initLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
+void initLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, const std::vector<std::string>& files) {
 
     panel->rect.w = windowConfig.width * 0.7;
     panel->rect.h = windowConfig.height * 0.7;
@@ -31,8 +31,8 @@ void initLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
     int start_x = panel->rect.x + padding;
     int start_y = panel->rect.y + 50;
 
-    for (int i = 0; i < libraryFiles.size(); i++) {
-        std::string fullPath = ASSETS_PATH + libraryFiles[i];
+    for (int i = 0; i < files.size(); i++) {
+        std::string fullPath = ASSETS_PATH + files[i];
         SDL_Surface *surface = IMG_Load(fullPath.c_str());
         if (surface) {
             panel->itemTextures.push_back(SDL_CreateTextureFromSurface(renderer, surface));
@@ -96,4 +96,21 @@ void addItemToLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, std::str
             item_size
     };
     panel->itemRects.push_back(item_r);
+}
+
+void cleanupLibraryPanel(LibraryPanel* panel) {
+
+    if (panel->closeBtnTexture) {
+        SDL_DestroyTexture(panel->closeBtnTexture);
+        panel->closeBtnTexture = nullptr;
+    }
+    for (auto &texture: panel->itemTextures) {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+    }
+
+    panel->itemTextures.clear();
+    panel->itemRects.clear();
+    panel->itemPaths.clear();
 }
