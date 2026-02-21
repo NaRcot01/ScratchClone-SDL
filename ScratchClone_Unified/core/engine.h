@@ -5,6 +5,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <vector>
+#include <string>
 #include "../ui/sprite.h"
 #include "../ui/stage.h"
 #include "../ui/sprite_panel.h"

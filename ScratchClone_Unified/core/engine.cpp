@@ -13,7 +13,7 @@
 #include "../ui/property_panel.h"
 #include "project_io.h"
 
-bool engineSaveProjects(const Engine& engine, const std::string& path) {
+bool engineSaveProject(const Engine& engine, const std::string& path) {
 	return saveProject(engine, path);
 }
 
