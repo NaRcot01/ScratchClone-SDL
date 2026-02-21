@@ -17,21 +17,24 @@ void initBlockPalette(BlockPalette* palette) {
     palette->category_menu_rect = {0, int(windowConfig.height * 0.04), 60, int(windowConfig.height * 0.96)};
     palette->block_panel_rect = {60, int(windowConfig.height * 0.04), 240, int(windowConfig.height * 0.96)};
 
-
+    // motion
     palette->template_blocks.push_back(createTemplate(BlockType::MOVE, {10}));
     palette->template_blocks.push_back(createTemplate(BlockType::TURN_RIGHT, {15}));
     palette->template_blocks.push_back(createTemplate(BlockType::TURN_LEFT, {15}));
     palette->template_blocks.push_back(createTemplate(BlockType::GO_TO_XY, {0, 0}));
-
+    // looks
     palette->template_blocks.push_back(createTemplate(BlockType::SAY, {}, "Hello!"));
     palette->template_blocks.push_back(createTemplate(BlockType::SHOW));
     palette->template_blocks.push_back(createTemplate(BlockType::HIDE));
-
+    // events
     palette->template_blocks.push_back(createTemplate(BlockType::ON_FLAG_CLICKED));
-
+    // control
     palette->template_blocks.push_back(createTemplate(BlockType::WAIT, {1}));
     palette->template_blocks.push_back(createTemplate(BlockType::REPEAT, {10}));
+    palette->template_blocks.push_back(createTemplate(BlockType::IF));
+
 }
+
 
 void drawBlockPalette(SDL_Renderer* renderer, BlockPalette* palette, TTF_Font* font) {
 

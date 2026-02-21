@@ -9,4 +9,5 @@
 struct Backdrop {
     SDL_Texture* texture;
     std::string name;
+    std::string file_path;
 };

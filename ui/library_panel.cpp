@@ -54,7 +54,7 @@ void initLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, const std::ve
     }
 }
 
-void drawLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
+void drawLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderFillRect(renderer, &panel->rect);
 
@@ -63,7 +63,32 @@ void drawLibraryPanel(SDL_Renderer *renderer, LibraryPanel *panel) {
     }
 
     for (int i = 0; i < panel->itemTextures.size(); i++) {
-        SDL_RenderCopy(renderer,panel->itemTextures[i], nullptr,&panel->itemRects[i]);
+        SDL_Rect& item_r = panel->itemRects[i];
+
+        SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
+        SDL_RenderFillRect(renderer, &item_r);
+
+        SDL_Rect image_rect = {
+                item_r.x + 5,
+                item_r.y + 5,
+                item_r.w - 10,
+                item_r.h - 30
+        };
+        SDL_RenderCopy(renderer, panel->itemTextures[i], NULL, &image_rect);
+
+        SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+        SDL_RenderDrawRect(renderer, &item_r);
+
+        std::string& full_path = panel->itemPaths[i];
+        size_t last_slash = full_path.find_last_of("/\\");
+        std::string filename = (last_slash == std::string::npos) ? full_path : full_path.substr(last_slash + 1);
+
+        int text_w, text_h;
+        my_TTF_SizeUTF8(font, filename.c_str(), &text_w, &text_h);
+        int text_x = item_r.x + (item_r.w - text_w) / 2;
+        int text_y = image_rect.y + image_rect.h + 5;
+
+        drawText(renderer, font, filename, text_x, text_y, {0, 0, 0, 255});
     }
 }
 

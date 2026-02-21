@@ -11,7 +11,10 @@
 
 enum TopBarButtonType{
     BTN_SPRITE_PANEL,
-    BTN_STAGE_PANEL
+    BTN_STAGE_PANEL,
+    BTN_SAVE_PROJECT,
+    BTN_LOAD_PROJECT,
+    BTN_NEW_PROJECT
 };
 
 struct TopBarButton{

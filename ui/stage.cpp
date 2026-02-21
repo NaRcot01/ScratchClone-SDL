@@ -58,10 +58,20 @@ void addNewBackgroundFromFile(SDL_Renderer* renderer, Stage* stage, const char* 
 
     if (new_backdrop_texture) {
         std::string path_str(filePath);
+
         size_t last_slash = path_str.find_last_of("/\\");
         std::string name = (last_slash == std::string::npos) ? path_str : path_str.substr(last_slash + 1);
 
-        Backdrop new_backdrop = {new_backdrop_texture, name};
+        std::string relative_path;
+        size_t pos = path_str.find(ASSETS_PATH);
+        if (pos != std::string::npos) {
+            relative_path = path_str.substr(pos + ASSETS_PATH.length());
+        } else {
+            relative_path = path_str;
+        }
+
+        Backdrop new_backdrop = {new_backdrop_texture, name, relative_path};
+
         stage->backgrounds.push_back(new_backdrop);
         stage->active_background_index = stage->backgrounds.size() - 1;
         // log :  new stage background has added and set as active.

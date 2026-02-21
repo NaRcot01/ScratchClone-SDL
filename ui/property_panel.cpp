@@ -61,10 +61,34 @@ void initPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, int screenW
     SDL_FreeSurface(surface1);
     SDL_FreeSurface(surface2);
 
-    panel->visibilityBtnRect.w = panel->rect.w * 0.2;
-    panel->visibilityBtnRect.h = panel->rect.h * 0.15;
-    panel->visibilityBtnRect.x = panel->rect.x + panel->rect.w - panel->visibilityBtnRect.w - 140;
-    panel->visibilityBtnRect.y = panel->rect.y + panel->rect.h - panel->visibilityBtnRect.h;
+    panel->visibilityBtnRect.w = panel->rect.w * 0.15;
+    panel->visibilityBtnRect.h = panel->rect.h * 0.12;
+    panel->visibilityBtnRect.x = panel->rect.x + panel->rect.w - panel->visibilityBtnRect.w - 90;
+    panel->visibilityBtnRect.y = panel->rect.y + panel->rect.h - panel->visibilityBtnRect.h - 5;
+
+    panel->flip_h_button_rect = {
+            panel->visibilityBtnRect.x + panel->visibilityBtnRect.w + 10,
+            panel->visibilityBtnRect.y,
+            panel->visibilityBtnRect.w,
+            panel->visibilityBtnRect.h
+    };
+    panel->flip_v_button_rect = {
+            panel->flip_h_button_rect.x + panel->flip_h_button_rect.w + 10,
+            panel->visibilityBtnRect.y,
+            panel->visibilityBtnRect.w,
+            panel->visibilityBtnRect.h
+    };
+    SDL_Surface* surface_flip_h = IMG_Load((ASSETS_PATH + "icons/flip_v.jpg").c_str());
+    if (surface_flip_h) {
+        panel->flip_h_button_texture = SDL_CreateTextureFromSurface(renderer, surface_flip_h);
+        SDL_FreeSurface(surface_flip_h);
+    }
+
+    SDL_Surface* surface_flip_v = IMG_Load((ASSETS_PATH + "icons/flip_h.jpg").c_str());
+    if (surface_flip_v) {
+        panel->flip_v_button_texture = SDL_CreateTextureFromSurface(renderer, surface_flip_v);
+        SDL_FreeSurface(surface_flip_v);
+    }
 
 }
 
@@ -103,6 +127,7 @@ void drawPropertyRow(SDL_Renderer *renderer, TTF_Font *font, PropertyRow *row, i
     if (!row->value.empty()) {
         drawText(renderer, font, row->value, x + 75, y, gray);
     }
+
 
 }
 
@@ -144,6 +169,13 @@ void drawPropertyPanel(SDL_Renderer *renderer, PropertyPanel *panel, Sprite *act
         panel->visibilityBtnState = false;
     }
 
+    if (panel->flip_h_button_texture) {
+        SDL_RenderCopy(renderer, panel->flip_h_button_texture, NULL, &panel->flip_h_button_rect);
+    }
+    if (panel->flip_v_button_texture) {
+        SDL_RenderCopy(renderer, panel->flip_v_button_texture, NULL, &panel->flip_v_button_rect);
+    }
+
 }
 
 bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int m_x, int m_y) {
@@ -162,6 +194,28 @@ bool handlePropertyPanelClicked(PropertyPanel *panel, Sprite *activeSprite, int 
         isClicked = true;
         panel->visibilityBtnState = !panel->visibilityBtnState;
         activeSprite->show = !activeSprite->show;
+    }
+    if(SDL_PointInRect(&p, &panel->flip_h_button_rect)) {
+        isClicked = true;
+        // if it is already flipped, deactivate flip mode
+        if (activeSprite->flip_mode & SDL_FLIP_HORIZONTAL) {
+            activeSprite->flip_mode = (SDL_RendererFlip)(activeSprite->flip_mode & ~SDL_FLIP_HORIZONTAL);
+        }
+        // flip it
+        else {
+            activeSprite->flip_mode = (SDL_RendererFlip)(activeSprite->flip_mode | SDL_FLIP_HORIZONTAL);
+        }
+    }
+    if(SDL_PointInRect(&p, &panel->flip_v_button_rect)) {
+        isClicked = true;
+        // if it is already flipped, deactivate flip mode
+        if (activeSprite->flip_mode & SDL_FLIP_VERTICAL) {
+            activeSprite->flip_mode = (SDL_RendererFlip)(activeSprite->flip_mode & ~SDL_FLIP_VERTICAL);
+        }
+        // flip it
+        else {
+            activeSprite->flip_mode = (SDL_RendererFlip)(activeSprite->flip_mode | SDL_FLIP_VERTICAL);
+        }
     }
     if (SDL_PointInRect(&p, &panel->rect)) { isClicked = true; }
 

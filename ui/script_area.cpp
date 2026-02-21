@@ -30,10 +30,10 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::WAIT,        {"Wait {} seconds",       {255, 171, 25, 255},{ParamType::NUMERIC}}},
         {BlockType::REPEAT,      {"Repeat {}",             {255, 171, 25, 255},{ParamType::NUMERIC}}},
         {BlockType::FOREVER,     {"Forever",               {255, 171, 25, 255}}},
-        {BlockType::IF,          {"If <> then",            {255, 171, 25, 255}}},
+        {BlockType::IF,          {"If <> then",            {255, 171, 25, 255},{ParamType::NUMERIC}}},
         {BlockType::ELSE,        {"Else",                  {255, 171, 25, 255}}},
-        {BlockType::END_IF,      {"End If",                {255, 171, 25, 255}}},
-        {BlockType::END_REPEAT,  {"End Repeat",            {255, 171, 25, 255}}},
+        {BlockType::END_IF,      {"",                {255, 171, 25, 255}}},
+        {BlockType::END_REPEAT,  {"",            {255, 171, 25, 255}}},
 };
 
 
@@ -49,11 +49,22 @@ void initScriptArea(ScriptArea* area) {
 void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font) {
 
     SDL_Color color = block_styles.count(block->type) ? block_styles[block->type].color : SDL_Color{128, 128, 128, 255};
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderFillRect(renderer, &block->rect);
+    if (block->type == BlockType::REPEAT || block->type == BlockType::FOREVER || block->type == BlockType::IF || block->type == BlockType::ELSE) {
+        SDL_Rect top_part = {block->rect.x, block->rect.y, block->rect.w, 40};
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
+        SDL_RenderFillRect(renderer, &top_part);
 
-    SDL_SetRenderDrawColor(renderer, color.r - 20, color.g - 20, color.b - 20, 255);
-    SDL_RenderDrawRect(renderer, &block->rect);
+        SDL_Rect bottom_part = {block->rect.x, block->rect.y + block->rect.h - 10, block->rect.w, 10};
+        SDL_RenderFillRect(renderer, &bottom_part);
+
+
+        SDL_Rect side_part = {block->rect.x, block->rect.y + 40, 20, block->rect.h - 50};
+        SDL_RenderFillRect(renderer, &side_part);
+    }
+    else {
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
+        SDL_RenderFillRect(renderer, &block->rect);
+    }
 
 
     block->param_rects.clear();
@@ -121,6 +132,94 @@ void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font) {
     }
 }
 
+void calculateAndDrawScript(SDL_Renderer* renderer, std::vector<Block>& script, int start_index, int end_index, int& current_x, int& current_y, TTF_Font* font) {
+    for (int i = start_index; i < end_index; ) {
+        Block& block = script[i];
+
+        if (block.type == BlockType::END_REPEAT || block.type == BlockType::END_IF || block.type == BlockType::ELSE) {
+            i++;
+            continue;
+        }
+
+        block.rect = {current_x, current_y, 220, 40};
+
+
+        if (block.type == BlockType::REPEAT || block.type == BlockType::FOREVER) {
+            int inner_block_start_index = i + 1;
+            int inner_end_index  = block.jumpToIndex;
+
+            int inner_x = current_x + 20;
+            int inner_y = current_y + block.rect.h;
+            int inner_content_height = 0;
+            if (inner_end_index  > inner_block_start_index) {
+                int temp_y_start = inner_y;
+                calculateAndDrawScript(renderer, script, inner_block_start_index, inner_end_index, inner_x, temp_y_start, font);
+                inner_content_height = temp_y_start - inner_y;
+            }
+            if (inner_content_height == 0) {
+                inner_content_height = 30;
+            }
+
+            block.rect.h = 40 + inner_content_height + 10;
+
+
+            drawBlock(renderer, &block, font);
+
+            current_y += block.rect.h + BLOCK_SPACING;
+
+            i = inner_end_index  + 1;
+        }
+        else if (block.type == BlockType::IF) {
+            int inner_if_start_index = i + 1;
+            int end_if_or_else_index = block.jumpToIndex;
+
+            int if_content_height = 0;
+            if (end_if_or_else_index > inner_if_start_index) {
+                int inner_x = current_x + 20;
+                int temp_y = current_y + 40;
+                calculateAndDrawScript(renderer, script, inner_if_start_index,end_if_or_else_index, inner_x, temp_y, font);
+                if_content_height = temp_y - (current_y + 40);
+            }
+            if (if_content_height == 0) if_content_height = 30;
+
+            block.rect.h = 40 + if_content_height + 10;
+            drawBlock(renderer, &block, font);
+
+            if (end_if_or_else_index < script.size() && script[end_if_or_else_index].type == BlockType::ELSE) {
+                Block& else_block = script[end_if_or_else_index];
+                int inner_else_start_index = end_if_or_else_index + 1;
+                int end_if_index = else_block.jumpToIndex;
+
+                else_block.rect = {current_x, current_y + block.rect.h, 220, 40};
+
+                int else_content_height = 0;
+                if (end_if_index > inner_else_start_index) {
+                    int inner_x = current_x + 20;
+                    int temp_y = else_block.rect.y + 40;
+                    calculateAndDrawScript(renderer, script, inner_else_start_index,end_if_index, inner_x, temp_y, font);
+                    else_content_height = temp_y - (else_block.rect.y + 40);
+                }
+                if (else_content_height == 0) else_content_height = 30;
+
+                else_block.rect.h = 40 + else_content_height + 10;
+                drawBlock(renderer, &else_block, font);
+
+                current_y += block.rect.h + else_block.rect.h + BLOCK_SPACING;
+                i = end_if_index + 1;
+            }
+            else {
+                current_y += block.rect.h + BLOCK_SPACING;
+                i = end_if_or_else_index + 1;
+            }
+        }
+        else {
+            drawBlock(renderer, &block, font);
+            current_y += block.rect.h + BLOCK_SPACING;
+            i++;
+        }
+    }
+}
+
 void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSprite, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255);
     SDL_RenderFillRect(renderer, &area->rect);
@@ -129,9 +228,12 @@ void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSpri
         return;
     }
 
-    for (const auto& script : activeSprite->scripts) {
-        for (const auto& block : script) {
-            drawBlock(renderer, const_cast<Block*>(&block), font);
-        }
+    for (auto& script : activeSprite->scripts) {
+        if (script.empty()) continue;
+
+        int current_x = script.front().rect.x;
+        int current_y = script.front().rect.y;
+
+        calculateAndDrawScript(renderer, script, 0,script.size(), current_x, current_y, font);
     }
 }

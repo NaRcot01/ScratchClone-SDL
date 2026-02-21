@@ -21,6 +21,7 @@
 #include "block_executor.h"
 #include "../ui/background_panel.h"
 #include "../ui/backdrop_porperty_panel.h"
+#include "project_io.h"
 
 // ================
 // Global Variables
@@ -86,6 +87,39 @@ void engineInit(Engine &engine) {
     engine.running = true;
 }
 
+
+void resetProject(SDL_Renderer* renderer, Engine &engine) {
+    // log : initializing new project
+
+    for (auto& sprite : sprites) { if(sprite.texture) SDL_DestroyTexture(sprite.texture); }
+    for (auto& backdrop : stage.backgrounds) { if(backdrop.texture) SDL_DestroyTexture(backdrop.texture); }
+
+    sprites.clear();
+    stage.backgrounds.clear();
+    running_scripts.clear();
+
+    activeSprite = NULL;
+    panelSelectedIndex = -1;
+    stage.active_background_index = -1;
+
+    propertyPanel.visible = false;
+    backdropPropertyPanel.is_visible = false;
+    engine.is_running_scripts = false;
+
+    initSprite(sprites[0], &stage);
+
+    sprites.clear();
+    Sprite default_sprite;
+    initSprite(default_sprite, &stage);
+    loadSpriteTexture(renderer, default_sprite, ASSETS_PATH + "test.bmp");
+    default_sprite.costume_path = "test.bmp";
+    sprites.push_back(default_sprite);
+
+    activeSprite = &sprites[0];
+    panelSelectedIndex = 0;
+    propertyPanel.visible = true;
+}
+
 void handleKeyDown(SDL_Event& event) {
     SDL_Keycode key = event.key.keysym.sym;
 
@@ -136,6 +170,39 @@ void handleKeyDown(SDL_Event& event) {
 
         return;
     }
+    // while IF block is selected,  E btn is pressed ---> else block appear
+    if (key == SDLK_e && activeSprite && !active_editing_block) {
+        int m_x, m_y;
+        SDL_GetMouseState(&m_x, &m_y);
+        SDL_Point mouse_point = {m_x, m_y};
+
+        for (auto& script : activeSprite->scripts) {
+            for (int i = 0; i < script.size(); ++i) {
+                // اگر روی یک بلوک IF کلیک شده
+                if (script[i].type == BlockType::IF && SDL_PointInRect(&mouse_point, &script[i].rect)) {
+
+                    // چک کن که آیا این IF از قبل ELSE دارد یا نه
+                    int end_if_index = script[i].jumpToIndex;
+                    if (end_if_index < script.size() && script[end_if_index].type == BlockType::ELSE) {
+                        std::cout << "This IF block already has an ELSE." << std::endl;
+                        return;
+                    }
+
+                    // --- منطق افزودن ELSE ---
+                    Block else_block = {BlockType::ELSE, {}, ""};
+
+                    // بلوک ELSE را بعد از محتوای داخلی IF، وارد کن
+                    script.insert(script.begin() + end_if_index, else_block);
+
+                    // حالا preprocessScript را دوباره فراخوانی کن تا تمام jumpToIndex ها آپدیت شوند
+                    preprocessScript(script);
+
+                    std::cout << "ELSE block added." << std::endl;
+                    return; // کار تمام شد
+                }
+            }
+        }
+    }
 
     // handle backdrop name editing
     if (backdropPropertyPanel.is_editing_name && stage.active_background_index != -1) {
@@ -154,21 +221,40 @@ void handleKeyDown(SDL_Event& event) {
 
     // handle sprite property panel editing
     if (propertyPanel.visible && activeSprite) {
-        for (auto &row: propertyPanel.rows) {
-            if (!row.active) { continue; }
+        for (auto &row1: propertyPanel.rows) {
+            if (key == SDLK_BACKSPACE) {
+                for (auto& row : propertyPanel.rows) {
+                    if (row.active && !row.value.empty()) {
+                        row.value.pop_back();
+                        applyPropertyToSprite(row, activeSprite, &stage);
+                        return;
+                    }
+                }
+            }
+            else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
+                for (auto& row : propertyPanel.rows) {
+                    if (row.active) {
+                        applyPropertyToSprite(row, activeSprite, &stage);
+                        spriteValidate(activeSprite, &stage);
+                        row.active = false;
+                    }
+                }
+                return;
+            }
+            if (!row1.active) { continue; }
 
             char c = event.key.keysym.sym;
 
-            if (row.type != "PROPERTY_NAME") {
+            if (row1.type != "PROPERTY_NAME") {
                 if (c >= SDLK_0 && c <= SDLK_9) {
-                    row.value += char('0' + c - SDLK_0);
+                    row1.value += char('0' + c - SDLK_0);
                 }
             } else {
                 if ((c >= SDLK_a && c <= SDLK_z) || (c >= SDLK_0 && c <= SDLK_9) || (c == SDLK_UNDERSCORE)) {
-                    row.value += char('a' + c - SDLK_a);
+                    row1.value += char('a' + c - SDLK_a);
                 }
             }
-            applyPropertyToSprite(row, activeSprite, &stage);
+            applyPropertyToSprite(row1, activeSprite, &stage);
         }
     }
 }
@@ -202,6 +288,25 @@ void handleMouseUp(SDL_Event& event) {
                 auto& target_script = activeSprite->scripts[i];
                 if (target_script.empty()) continue;
 
+                for (int j = 0; j < target_script.size(); ++j) {
+                    Block& target_block = target_script[j];
+                    if (target_block.type == BlockType::REPEAT || target_block.type == BlockType::FOREVER || target_block.type == BlockType::IF  || target_block.type == BlockType::ELSE) {
+                        SDL_Rect inner_snap_zone = {target_block.rect.x + 20, target_block.rect.y + 40, target_block.rect.w - 20, target_block.rect.h - 50};
+                        if (SDL_PointInRect(&mouse_point, &inner_snap_zone)) {
+
+                            target_script.insert(
+                                    target_script.begin() + j + 1,
+                                    drag_state.dragged_script.begin(),
+                                    drag_state.dragged_script.end()
+                            );
+
+                            preprocessScript(target_script);
+                            merged = true;
+                            break;
+                        }
+                    }
+                }
+
                 Block& dragged_first = drag_state.dragged_script.front();
                 Block& dragged_last = drag_state.dragged_script.back();
                 Block& target_first = target_script.front();
@@ -209,12 +314,14 @@ void handleMouseUp(SDL_Event& event) {
 
                 if (abs((target_last.rect.y + target_last.rect.h) - dragged_first.rect.y) < 10) {
                     target_script.insert(target_script.end(), drag_state.dragged_script.begin(), drag_state.dragged_script.end());
+                    preprocessScript(target_script);
                     merged = true;
                     break;
                 }
 
                 if (abs((dragged_last.rect.y + dragged_last.rect.h) - target_first.rect.y) < 10) {
                     drag_state.dragged_script.insert(drag_state.dragged_script.end(), target_script.begin(), target_script.end());
+                    preprocessScript(target_script);
                     target_script = drag_state.dragged_script;
                     merged = true;
                     break;
@@ -222,6 +329,7 @@ void handleMouseUp(SDL_Event& event) {
             }
 
             if (!merged) {
+                preprocessScript(drag_state.dragged_script);
                 activeSprite->scripts.push_back(drag_state.dragged_script);
             }
 
@@ -246,7 +354,7 @@ void handleMouseUp(SDL_Event& event) {
 }
 
 void handleMouseMotion(SDL_Event& event) {
-    //  handle sprite frag motion ---
+    //  handle sprite frag motion
     if (activeSprite && activeSprite->dragging) {
         moveSprite(activeSprite, event.motion.x - activeSprite->diff_x_mouse, event.motion.y - activeSprite->diff_y_mouse, &stage);
     }
@@ -278,6 +386,27 @@ void handleMouseMotion(SDL_Event& event) {
 
             for (const auto &script: activeSprite->scripts) {
                 if (script.empty()) continue;
+
+                for (const auto& target_block : script) {
+                    if (target_block.type == BlockType::REPEAT || target_block.type == BlockType::FOREVER || target_block.type == BlockType::IF) {
+                        SDL_Rect inner_snap_zone = {
+                                target_block.rect.x + 20,
+                                target_block.rect.y + 40,
+                                target_block.rect.w - 20,
+                                target_block.rect.h - 50
+                        };
+                        SDL_Point p = {event.motion.x ,event.motion.y};
+                        if (SDL_PointInRect(&p, &inner_snap_zone)) {
+                            drag_state.show_snap_preview = true;
+                            drag_state.snap_preview_rect = {
+                                    target_block.rect.x + 20,
+                                    target_block.rect.y + 40,
+                                    drag_state.dragged_script.front().rect.w,
+                            };
+                            break;
+                        }
+                    }
+                }
 
                 const Block &target_last_block = script.back();
                 SDL_Rect snap_zone_bottom = {target_last_block.rect.x,
@@ -342,7 +471,7 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
         }
     }
 
-    // control & topBar buttons
+    // control buttons
     if (SDL_PointInRect(&mouse_point, &controlPanel.green_flag_rect)) {
         engine.is_running_scripts = true;
         // log : green flag clicked. starting scripts
@@ -368,6 +497,8 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
         // log : stop button clicked! stoping all scripts
          return;
     }
+
+    // Topbar buttons
     for (int i = 0; i < topBar.buttonCount; i++) {
         TopBarButton &btn = topBar.buttons[i];
         if (btn.isClicked(m_x, m_y)) {
@@ -378,6 +509,71 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                 showBGPanel = !showBGPanel;
                 showSpritePanel = false;
             }
+            else if (btn.type == BTN_SAVE_PROJECT) {
+                const char* filterPatterns[1] = {"*.json"};
+                const char* path = tinyfd_saveFileDialog(
+                        "Save Project",
+                        "my_project.json",
+                        1,
+                        filterPatterns,
+                        "JSON Project File"
+                );
+                if (path) {
+                    if (saveProject(path)) {
+                        // log : successfully the project has been saved
+                    } else {
+                        // log : saving project encounter error !
+                    }
+                }
+            }
+            else if (btn.type == BTN_LOAD_PROJECT) {
+                const char* filterPatterns[1] = {"*.json"};
+                const char* path = tinyfd_openFileDialog(
+                        "Load Project",
+                        "",
+                        1,
+                        filterPatterns,
+                        "JSON Project File",
+                        0
+                );
+                if (path) {
+
+                    engine.is_running_scripts = false;
+                    running_scripts.clear();
+
+                    if (loadProject(path, renderer)) {
+                        // log : successfully the project has been loaded
+                    } else {
+                        // log : loading project encounter error !
+                    }
+                }
+            }
+            else if (btn.type == BTN_NEW_PROJECT) {
+                int choice = tinyfd_messageBox(
+                        "New Project",
+                        "Do you want to save the current project before creating a new one?",
+                        "yesnocancel",
+                        "question",
+                        1
+                );
+
+                // 1 = Yes, 2 = No, 0 = Cancel
+                bool proceed = false;
+                if (choice == 1) { // Yes
+                    const char* filterPatterns[1] = {"*.json"};
+                    const char* save_path = tinyfd_saveFileDialog("Save Project", "my_project.json", 1, filterPatterns, "JSON Project File");
+                    if (save_path && saveProject(save_path)) {
+                        proceed = true;
+                    }
+                }
+                else if (choice == 2) { // No
+                    proceed = true;
+                }
+                if (proceed) {
+                    resetProject(renderer,engine);
+                }
+            }
+            return;
         }
     }
 
@@ -391,6 +587,15 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
 
                 drag_state.dragged_script.clear();
                 drag_state.dragged_script.push_back(template_block);
+
+                if (template_block.type == BlockType::REPEAT || template_block.type == BlockType::FOREVER) {
+                    Block end_block = {BlockType::END_REPEAT, {}, ""};
+                    drag_state.dragged_script.push_back(end_block);
+                }
+                else if (template_block.type == BlockType::IF) {
+                    Block end_block = {BlockType::END_IF, {}, ""};
+                    drag_state.dragged_script.push_back(end_block);
+                }
 
                 drag_state.source_sprite_index = -1;
                 drag_state.source_script_index = -1;
@@ -408,6 +613,19 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
 
     // click in script area
     if (activeSprite && SDL_PointInRect(&mouse_point, &scriptArea.rect)) {
+        for (auto& script : activeSprite->scripts) {
+            for (auto& block : script) {
+                if (!SDL_PointInRect(&mouse_point, &block.rect)) continue;
+
+                for (size_t i = 0; i < block.param_rects.size(); ++i) {
+                    if (SDL_PointInRect(&mouse_point, &block.param_rects[i])) {
+                        active_editing_block = &block;
+                        active_editing_param_index = i;
+                        return;
+                    }
+                }
+            }
+        }
         for (int i = activeSprite->scripts.size() - 1; i >= 0; --i) {
             for (int j = activeSprite->scripts[i].size() - 1; j >= 0; --j) {
 
@@ -596,19 +814,6 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                     0
             );
             if (filePath) {
-                std::string sourcePath = filePath;
-                size_t lastSlash = sourcePath.find_last_of("/\\");
-                std::string fileName = (lastSlash == std::string::npos) ? sourcePath : sourcePath.substr(
-                        lastSlash + 1);
-
-                std::string destPathStr = ASSETS_PATH + "sprite_lib/" + fileName;
-                if (copyFile(sourcePath, destPathStr)) {
-                    // log sprite added to lib
-                    libraryFiles.push_back("sprite_lib/" + fileName);
-                    addItemToLibraryPanel(&libraryPanel, renderer, filePath);
-                } else {
-                    // log error while adding sprite to lib
-                }
                 addNewSpriteFromFile(renderer, filePath, stage, sprites);
             }
             return;
@@ -618,7 +823,7 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
             showLibraryPanel = true;
             cleanupLibraryPanel(&libraryPanel);
             initLibraryPanel(&libraryPanel, renderer, libraryFiles);
-            return; // کلیک هندل شد
+            return;
         }
         // random btn
         if (SDL_PointInRect(&mouse_point, &spritePanel.buttonRects[2])) {
@@ -822,6 +1027,7 @@ void initSprites(SDL_Renderer *renderer) {
         b3.rect = {350, b2.rect.y + b2.rect.h + BLOCK_SPACING, 220, 40};
         test_script.push_back(b3);
 
+
         sprites[0].scripts.push_back(test_script);
     }
 }
@@ -883,16 +1089,16 @@ void engineDraw(SDL_Renderer *renderer) {
         drawPropertyPanel(renderer, &propertyPanel, activeSprite, font);
     }
     if (showLibraryPanel) {
-        drawLibraryPanel(renderer, &libraryPanel);
+        drawLibraryPanel(renderer, &libraryPanel,font);
     }
     if (showBackdropLibrary) {
-        drawLibraryPanel(renderer, &libraryPanel);
+        drawLibraryPanel(renderer, &libraryPanel,font);
     }
 
     if (drag_state.is_dragging) {
         if (drag_state.show_snap_preview) {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 80); // مشکی نیمه‌شفاف
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 80);
             SDL_RenderFillRect(renderer, &drag_state.snap_preview_rect);
         }
 

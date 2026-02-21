@@ -36,6 +36,39 @@ void initTopBar(TopBar *bar) {
     bar->buttons[bar->buttonCount] = stage_btn;
     bar->buttonCount++;
 
+
+
+    TopBarButton new_btn;
+    new_btn.rect.x = stage_btn.rect.x + stage_btn.rect.w + 30;
+    new_btn.rect.y = 5;
+    new_btn.rect.h = bar->rect.h - 10;
+    new_btn.rect.w = bar->rect.w / 20;
+    new_btn.type = BTN_NEW_PROJECT;
+    new_btn.text = "New";
+    bar->buttons[bar->buttonCount] = new_btn;
+    bar->buttonCount++;
+
+    TopBarButton save_btn;
+    save_btn.rect.x = new_btn.rect.x + new_btn.rect.w + 30;
+    save_btn.rect.y = 5;
+    save_btn.rect.h = bar->rect.h - 10;
+    save_btn.rect.w = bar->rect.w / 20;
+    save_btn.type = BTN_SAVE_PROJECT;
+    save_btn.text = "Save";
+    bar->buttons[bar->buttonCount] = save_btn;
+    bar->buttonCount++;
+
+    TopBarButton load_btn;
+    load_btn.rect.x = save_btn.rect.x + save_btn.rect.w + 10;
+    load_btn.rect.y = 5;
+    load_btn.rect.h = bar->rect.h - 10;
+    load_btn.rect.w = bar->rect.w / 20;
+    load_btn.type = BTN_LOAD_PROJECT;
+    load_btn.text = "Load";
+    bar->buttons[bar->buttonCount] = load_btn;
+    bar->buttonCount++;
+
+
 }
 
 

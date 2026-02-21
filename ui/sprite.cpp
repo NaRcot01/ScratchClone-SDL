@@ -35,7 +35,7 @@ void drawSprite(SDL_Renderer *renderer, const Sprite *sprite) {
 
     if (sprite->texture) {
         SDL_Point center = {sprite->rect.w / 2, sprite->rect.h / 2};
-        SDL_RenderCopyEx(renderer, sprite->texture, nullptr, &sprite->rect, sprite->rotation,&center,SDL_FLIP_NONE);
+        SDL_RenderCopyEx(renderer, sprite->texture, nullptr, &sprite->rect, sprite->rotation,&center,sprite->flip_mode);
     } else {
         SDL_SetRenderDrawColor(renderer, 18, 100, 100, 255);
         SDL_RenderFillRect(renderer, &sprite->rect);
@@ -101,19 +101,42 @@ void spriteValidate(Sprite *sprite, const Stage *stage) {
 }
 
 void addNewSpriteFromFile(SDL_Renderer* renderer, const char* filePath, Stage& stage, std::vector<Sprite>& sprites){
-    if(!filePath){
-        // log : file path for sprite is invalid!
-        return;
+    std::string sourceFilePath = filePath;
+    if (sourceFilePath.empty()) return;
+
+    std::string relative_path_to_save;
+    std::string full_path_to_load = sourceFilePath;
+
+    size_t assets_pos = sourceFilePath.find(ASSETS_PATH);
+    if (assets_pos == std::string::npos) {
+
+
+        size_t last_slash = sourceFilePath.find_last_of("/\\");
+        std::string filename = (last_slash == std::string::npos) ? sourceFilePath : sourceFilePath.substr(last_slash + 1);
+
+        std::string dest_full_path = ASSETS_PATH + "sprite_lib/" + filename;
+        std::string dest_relative_path = "sprite_lib/" + filename;
+
+
+        if (copyFile(sourceFilePath, dest_full_path)) {}
+        else {
+                // log : error while transferring file to library
+        }
+
+        full_path_to_load = dest_full_path;
+        relative_path_to_save = dest_relative_path;
+
+    } else {
+        relative_path_to_save = sourceFilePath.substr(assets_pos + ASSETS_PATH.length());
     }
+
     Sprite newSprite;
-    initSprite(newSprite,&stage);
+    initSprite(newSprite, &stage);
 
-    if(loadSpriteTexture(renderer,newSprite,filePath)){
+    if (loadSpriteTexture(renderer, newSprite, full_path_to_load)) {
+        newSprite.costume_path = relative_path_to_save;
         sprites.push_back(newSprite);
+    } else {
+        // log : error while loading sprite texture
     }
-    else{
-        // log : the sprite can not be added to the Sprite vector.
-    }
-
-
 }

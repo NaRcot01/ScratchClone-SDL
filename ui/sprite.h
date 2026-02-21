@@ -8,6 +8,7 @@
 #include "stage.h"
 #include <vector>
 #include "block.h"
+#include "../core/config.h"
 
 struct Sprite{
     SDL_Rect rect;
@@ -25,6 +26,8 @@ struct Sprite{
     double x;
     double y;
     double direction = 0;
+    SDL_RendererFlip flip_mode = SDL_FLIP_NONE;
+    std::string costume_path;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

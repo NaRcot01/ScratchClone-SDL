@@ -42,6 +42,10 @@ struct PropertyPanel {
     SDL_Texture *eyeOpenTexture;
     SDL_Texture *eyeCloseTexture;
     bool visibilityBtnState; // 0 means its hidden and 1 means its shown.
+    SDL_Rect flip_h_button_rect;
+    SDL_Rect flip_v_button_rect;
+    SDL_Texture* flip_h_button_texture;
+    SDL_Texture* flip_v_button_texture;
 };
 
 
