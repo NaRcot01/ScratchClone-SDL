@@ -1,0 +1,41 @@
+PROJECT
+SPRITES 3
+SPRITE
+name Sprite_be
+x 1020.87
+y 128.765
+direction 25306
+size 100
+visible 1
+rotation16
+costume 0
+SCRIPTS 1
+SCRIPT 1 BLOCKS 4
+BLOCK 0 -1 1 2 
+BLOCK 1 -1 1 1 
+BLOCK 10 0 0 
+BLOCK 10 0 0 
+END_SPRITE
+SPRITE
+name Sprite_AL
+x 809
+y 110
+direction 90
+size 100
+visible 1
+rotation0
+costume 0
+SCRIPTS 0
+END_SPRITE
+SPRITE
+name Sprite_CX
+x 1039
+y 442
+direction 90
+size 100
+visible 1
+rotation0
+costume 0
+SCRIPTS 0
+END_SPRITE
+END_PROJECT

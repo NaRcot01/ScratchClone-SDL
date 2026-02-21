@@ -9,7 +9,7 @@ void initTopBar(TopBar* bar){
     bar->rect.x = 0;
     bar->rect.y=0;
     bar->rect.w = windowConfig.width;
-    bar->rect.h = windowConfig.height * 0.04;
+    bar->rect.h = windowConfig.height * 0.06;
     bar->buttonCount = 0;
 
     int currentX = 10;
