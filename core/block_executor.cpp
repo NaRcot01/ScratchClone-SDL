@@ -15,6 +15,7 @@
 #include <map>
 #include <thread>
 #include <chrono>
+#include <random>
 
 using namespace std;
 const double pi = 3.141592653589;
@@ -186,6 +187,39 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
             }
             break;
         }
+        case BlockType::GO_TO_RANDOM_POSITION: {
+            unsigned seed = time(nullptr) + rand();
+            std::mt19937 gen(seed);
+            std::uniform_int_distribution<> distrib_x(0, 399);
+            std::uniform_int_distribution<> distrib_y(0, 607);
+
+            sprite.x = 1101 + distrib_x(gen);
+            sprite.y = 193 + distrib_y(gen);
+            break;
+        }
+        case BlockType::SET_X: {
+            if (!block.parameters.empty()) {
+                std::cout << "meow";
+                sprite.x = 1040 + block.parameters[0];
+            }
+            break;
+        }
+
+        case BlockType::SET_Y: {
+            if (!block.parameters.empty()) {
+                sprite.y = 32 + block.parameters[0];
+            }
+            break;
+        }
+
+        case BlockType::CHANGE_SIZE: {
+            if (!block.parameters.empty()) {
+                sprite.size += block.parameters[0];
+                if (sprite.size < 0) sprite.size = 0;
+            }
+            break;
+        }
+
 
         default:
             break;
@@ -245,7 +279,6 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
         else if (!currentBlock.parameters.empty()) {
             condition = (currentBlock.parameters[0] != 0);
         }
-
         if (condition) {
             state.pc++;
         } else {

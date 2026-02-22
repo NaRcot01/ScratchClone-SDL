@@ -32,7 +32,14 @@ void initBlockPalette(BlockPalette* palette) {
     palette->category_buttons.push_back({BlockCategory::CONTROL, {10, btn_y, 60, 25}, "Control", {255, 171, 25, 255}});
     btn_y += 35;
     palette->category_buttons.push_back({BlockCategory::OPERATORS, {10, btn_y, 60, 25}, "Operators", {83, 193, 83, 255}});
-
+    btn_y += 35;
+    palette->category_buttons.push_back({BlockCategory::VARIABLES, {10, btn_y, 60, 25}, "Variables", {255, 140, 25, 255}}); // نارنجی تیره‌تر
+    palette->make_variable_button_rect = {
+            palette->block_panel_rect.x + 20,
+            palette->block_panel_rect.y + 20,
+            palette->block_panel_rect.w - 40,
+            30
+    };
 
     // motion
     palette->template_blocks.push_back(createTemplate(BlockType::MOVE,BlockCategory::MOTION, {10}));
@@ -41,10 +48,15 @@ void initBlockPalette(BlockPalette* palette) {
     palette->template_blocks.push_back(createTemplate(BlockType::GO_TO_XY,BlockCategory::MOTION, {0, 0}));
     palette->template_blocks.push_back(createTemplate(BlockType::X_POSITION, BlockCategory::MOTION));
     palette->template_blocks.push_back(createTemplate(BlockType::Y_POSITION, BlockCategory::MOTION));
+    palette->template_blocks.push_back(createTemplate(BlockType::GO_TO_RANDOM_POSITION, BlockCategory::MOTION));
+    palette->template_blocks.push_back(createTemplate(BlockType::SET_X, BlockCategory::MOTION, {0}));
+    palette->template_blocks.push_back(createTemplate(BlockType::SET_Y, BlockCategory::MOTION, {0}));
+    // ...
     // looks
     palette->template_blocks.push_back(createTemplate(BlockType::SAY,BlockCategory::LOOKS, {}, "Hello!"));
     palette->template_blocks.push_back(createTemplate(BlockType::SHOW,BlockCategory::LOOKS));
     palette->template_blocks.push_back(createTemplate(BlockType::HIDE,BlockCategory::LOOKS));
+    palette->template_blocks.push_back(createTemplate(BlockType::CHANGE_SIZE, BlockCategory::LOOKS, {10}));
     // events
     palette->template_blocks.push_back(createTemplate(BlockType::ON_FLAG_CLICKED,BlockCategory::EVENTS));
     // control
@@ -81,21 +93,40 @@ void drawBlockPalette(SDL_Renderer* renderer, BlockPalette* palette, TTF_Font* f
     SDL_SetRenderDrawColor(renderer, 235, 235, 235, 255);
     SDL_RenderFillRect(renderer, &palette->block_panel_rect);
 
-    int current_y = palette->block_panel_rect.y + 20 - palette->scroll_offset_y;
+    if (palette->selected_category == BlockCategory::VARIABLES) {
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_RenderFillRect(renderer, &palette->make_variable_button_rect);
+        drawText(renderer, font, "Make a Variable", palette->make_variable_button_rect.x + 10, palette->make_variable_button_rect.y + 5, {0,0,0,255});
 
-    for (auto& block_template : palette->template_blocks) {
-        if (block_template.category == palette->selected_category) {
-
-            block_template.rect = {
+        int current_y = palette->make_variable_button_rect.y + 40;
+        for (auto& var_block : palette->variable_blocks) {
+            var_block.rect = {
                     palette->block_panel_rect.x + 10,
                     current_y,
-                    palette->block_panel_rect.w - 20,
-                    40
+                    (int)(var_block.textParam.length() * 8 + 20),
+                    30
             };
+            drawBlock(renderer, &var_block, font);
+            current_y += 40;
+        }
+    }
+    else {
+        int current_y = palette->block_panel_rect.y + 20 - palette->scroll_offset_y;
 
-            drawBlock(renderer, &block_template, font);
+        for (auto &block_template: palette->template_blocks) {
+            if (block_template.category == palette->selected_category) {
 
-            current_y += 50;
+                block_template.rect = {
+                        palette->block_panel_rect.x + 10,
+                        current_y,
+                        palette->block_panel_rect.w - 20,
+                        40
+                };
+
+                drawBlock(renderer, &block_template, font);
+
+                current_y += 50;
+            }
         }
     }
 }

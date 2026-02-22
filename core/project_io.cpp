@@ -37,6 +37,10 @@ static void saveSprite(std::ofstream& out, const Sprite& s) {
             saveBlock(out, b, 1);
         }
     }
+    out << "SOUNDS " << s.sounds.size() << "\n";
+    for (const auto& sound : s.sounds) {
+        out << "SOUND " << sound.name << " " << sound.file_path << "\n";
+    }
     out << "END_SPRITE\n";
 }
 
@@ -124,6 +128,30 @@ static bool loadSprite(std::ifstream& in, Sprite& s, SDL_Renderer* renderer) {
 
                     preprocessScript(s.scripts[i]);
                     calculateLayout(s.scripts[i], 0, s.scripts[i].size(), script_x, script_y);
+                }
+            }
+        }
+        else if (token == "SOUNDS") {
+            size_t soundCount;
+            ss >> soundCount;
+            s.sounds.clear();
+            s.sounds.reserve(soundCount);
+            for (size_t i = 0; i < soundCount; ++i) {
+                std::getline(in, line);
+                std::stringstream sound_ss(line);
+
+                sound_ss >> token; // "SOUND"
+
+                std::string sound_name, sound_path;
+                sound_ss >> sound_name >> sound_path;
+
+                std::string full_path = sound_path;
+                Mix_Chunk* chunk = Mix_LoadWAV(full_path.c_str());
+
+                if (chunk) {
+                    s.sounds.push_back({chunk, sound_name, sound_path});
+                } else {
+                    std::cerr << "Failed to load sound on project load: " << full_path << std::endl;
                 }
             }
         }

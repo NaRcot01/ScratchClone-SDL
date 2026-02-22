@@ -95,6 +95,18 @@ void spriteValidate(Sprite *sprite, const Stage *stage) {
     if (sprite->rect.y + sprite->rect.h > stage->rect.y + stage->rect.h) {
         sprite->rect.y = stage->rect.y + stage->rect.h - sprite->rect.h;
     }
+    if (sprite->x < stage->rect.x) {
+        sprite->rect.x = stage->rect.x;
+    }
+    if (sprite->y < stage->rect.y) {
+        sprite->rect.y = stage->rect.y;
+    }
+    if (sprite->x + sprite->rect.w > stage->rect.x + stage->rect.w) {
+        sprite->rect.x = stage->rect.x + stage->rect.w - sprite->rect.w;
+    }
+    if (sprite->y + sprite->rect.h > stage->rect.y + stage->rect.h) {
+        sprite->rect.y = stage->rect.y + stage->rect.h - sprite->rect.h;
+    }
     if(sprite->rotation >= 360){
         sprite->rotation = sprite->rotation % 360;
     }

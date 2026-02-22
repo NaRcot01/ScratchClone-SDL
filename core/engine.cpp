@@ -162,7 +162,7 @@ void handleKeyDown(SDL_Event& event) {
                 active_editing_block->parameters[active_editing_param_index] == 0) {
                 if (original_value_on_edit != "")
                     active_editing_block->parameters[active_editing_param_index] = std::stod(
-                            original_value_on_edit);
+                            original_value_on_edit) ;
             }
 
             active_editing_block = nullptr;
@@ -701,6 +701,20 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
     // start a drag operation
     // from block palette
     if (SDL_PointInRect(&mouse_point, &blockPalette.block_panel_rect)) {
+        if (blockPalette.selected_category == BlockCategory::VARIABLES) {
+            if (SDL_PointInRect(&mouse_point, &blockPalette.make_variable_button_rect)) {
+                const char* var_name = tinyfd_inputBox("New Variable", "Variable name:", "");
+                if (var_name) {
+                    std::string new_var_name = var_name;
+                    if (!new_var_name.empty()) {
+                        Block new_var_block = createTemplate(BlockType::RAND, BlockCategory::VARIABLES, {}, new_var_name);
+                        blockPalette.variable_blocks.push_back(new_var_block);
+                    }
+                }
+                return;
+            }
+            // TODO: شروع Drag برای بلوک‌های متغیر
+        }
         int current_y = blockPalette.block_panel_rect.y + 20 - blockPalette.scroll_offset_y;
 
         for (auto& template_block : blockPalette.template_blocks) {
@@ -1251,6 +1265,10 @@ void engineDraw(SDL_Renderer *renderer) {
         for (auto& block : drag_state.dragged_script) {
             drawBlock(renderer, &block, font);
         }
+    }
+
+    for(auto& sprite : sprites){
+        spriteValidate(&sprite,&stage);
     }
 
 

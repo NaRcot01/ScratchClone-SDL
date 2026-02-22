@@ -18,6 +18,9 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::GO_TO_XY,    {"Go to x: {} y: {}",     { 76, 151, 255, 255},{ParamType::NUMERIC,ParamType::NUMERIC}}},
         {BlockType::X_POSITION,  {"x position",            { 76, 151, 255, 255}, {}}},
         {BlockType::Y_POSITION,  {"y position",            { 76, 151, 255, 255}, {}}},
+        {BlockType::GO_TO_RANDOM_POSITION, {"Go to random position", {76, 151, 255, 255}, {}}},
+        {BlockType::SET_X,         {"Set x to {}",          {76, 151, 255, 255}, {ParamType::NUMERIC}}},
+        {BlockType::SET_Y,         {"Set y to {}",          {76, 151, 255, 255}, {ParamType::NUMERIC}}},
 
         // Looks Blocks (Purple)
         {BlockType::SAY,         {"Say {}",                {156, 89, 209, 255},{ParamType::STRING}}},
@@ -39,6 +42,7 @@ std::map<BlockType, BlockAppearance> block_styles = {
 
         // Operators (Green)
         {BlockType::GREATER_THAN, { "{} > {}", {83, 193, 83, 255}, {ParamType::NUMERIC, ParamType::NUMERIC}}},
+        {BlockType::RAND,         { "{}", {255, 140, 25, 255}, {ParamType::STRING}}},
 
         // Sound Blocks (Pink)
         {BlockType::PLAY_SOUND, {"play sound {}", {208, 3, 147, 255}, {ParamType::STRING}}},

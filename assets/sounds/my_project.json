@@ -1,0 +1,36 @@
+SCRATCH_CLONE_PROJECT_V1
+STAGE
+active_backdrop -1
+BACKDROPS 0
+END_STAGE
+SPRITES 2
+SPRITE
+name Sprite_AV
+costume_path 
+x 1040
+y 635
+direction 0
+size 100
+visible 1
+flip_mode 0
+SCRIPTS 1
+SCRIPT_BLOCKS 3 350 100
+	BLOCK 13 -1 0 - 0
+	BLOCK 0 -1 1 25.000000 - 0
+	BLOCK 1 -1 1 90.000000 - 0
+SOUNDS 1
+SOUND kick.wav G:\FoP_Project_Clion\assets\sounds\kick.wav
+END_SPRITE
+SPRITE
+name Sprite_GS
+costume_path 
+x 1357.000000
+y 32.000000
+direction 0.000000
+size 100
+visible 1
+flip_mode 0
+SCRIPTS 0
+SOUNDS 0
+END_SPRITE
+END_PROJECT
