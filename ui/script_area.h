@@ -14,3 +14,4 @@ struct ScriptArea {
 void initScriptArea(ScriptArea* area);
 void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSprite, TTF_Font* font);
 void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font);
+void calculateLayout(std::vector<Block>& script, int start_index, int end_index, int& current_x, int& current_y);

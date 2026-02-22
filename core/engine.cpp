@@ -469,6 +469,7 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                 return;
             }
         }
+        if(SDL_PointInRect(&mouse_point, &libraryPanel.rect)) return;
     }
 
     // control buttons
@@ -629,29 +630,45 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
         for (int i = activeSprite->scripts.size() - 1; i >= 0; --i) {
             for (int j = activeSprite->scripts[i].size() - 1; j >= 0; --j) {
 
-                Block& current_block = activeSprite->scripts[i][j];
-
-                if (SDL_PointInRect(&mouse_point, &current_block.rect)) {
+                if (SDL_PointInRect(&mouse_point, &activeSprite->scripts[i][j].rect)) {
 
                     drag_state.is_dragging = true;
+                    drag_state.source_sprite_index = panelSelectedIndex;
+                    drag_state.source_script_index = i;
 
-                    drag_state.dragged_script.assign(
-                            activeSprite->scripts[i].begin() + j,
-                            activeSprite->scripts[i].end()
-                    );
+                    Block& clicked_block_ref = activeSprite->scripts[i][j];
+                    drag_state.offset_x = m_x - clicked_block_ref.rect.x;
+                    drag_state.offset_y = m_y - clicked_block_ref.rect.y;
 
-                    activeSprite->scripts[i].resize(j);
+                    auto assign_start = activeSprite->scripts[i].begin() + j;
+                    auto assign_end = activeSprite->scripts[i].end();
+
+
+                    for (int k = 0; k < j; ++k) {
+                        const auto& parent_block = activeSprite->scripts[i][k];
+                        if ((parent_block.type == BlockType::IF || parent_block.type == BlockType::REPEAT || parent_block.type == BlockType::FOREVER) && parent_block.jumpToIndex > j) {
+
+                            assign_end = activeSprite->scripts[i].begin() + parent_block.jumpToIndex;
+                            break;
+                        }
+
+                        if(parent_block.type == BlockType::IF && parent_block.jumpToIndex < activeSprite->scripts[i].size() && activeSprite->scripts[i][parent_block.jumpToIndex].type == BlockType::ELSE) {
+                            const auto& else_block = activeSprite->scripts[i][parent_block.jumpToIndex];
+                            if(else_block.jumpToIndex > j) {
+                                assign_end = activeSprite->scripts[i].begin() + else_block.jumpToIndex;
+                                break;
+                            }
+                        }
+                    }
+
+                    drag_state.dragged_script.assign(assign_start, assign_end);
+                    activeSprite->scripts[i].erase(assign_start, assign_end);
 
                     if (activeSprite->scripts[i].empty()) {
                         activeSprite->scripts.erase(activeSprite->scripts.begin() + i);
+                    } else {
+                        preprocessScript(activeSprite->scripts[i]);
                     }
-
-                    drag_state.source_sprite_index = panelSelectedIndex;
-                    drag_state.source_script_index = i;
-                    drag_state.offset_x = m_x - current_block.rect.x;
-                    drag_state.offset_y = m_y - current_block.rect.y;
-
-
 
                     return;
                 }

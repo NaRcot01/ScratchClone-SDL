@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include "../ui/script_area.h"
 
 extern std::vector<Sprite> sprites;
 extern Stage stage;
@@ -117,8 +118,10 @@ static bool loadSprite(std::ifstream& in, Sprite& s, SDL_Renderer* renderer) {
                 if (!s.scripts[i].empty()) {
                     s.scripts[i].front().rect.x = script_x;
                     s.scripts[i].front().rect.y = script_y;
+
+                    preprocessScript(s.scripts[i]);
+                    calculateLayout(s.scripts[i], 0, s.scripts[i].size(), script_x, script_y);
                 }
-                preprocessScript(s.scripts[i]);
             }
         }
     }
