@@ -214,7 +214,7 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
 
         case BlockType::CHANGE_SIZE: {
             if (!block.parameters.empty()) {
-                sprite.size += block.parameters[0];
+                sprite.size = block.parameters[0];
                 if (sprite.size < 0) sprite.size = 0;
             }
             break;

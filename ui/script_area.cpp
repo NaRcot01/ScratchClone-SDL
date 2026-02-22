@@ -26,7 +26,7 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::SAY,         {"Say {}",                {156, 89, 209, 255},{ParamType::STRING}}},
         {BlockType::SHOW,        {"Show",                  {156, 89, 209, 255}}},
         {BlockType::HIDE,        {"Hide",                  {156, 89, 209, 255}}},
-        {BlockType::SET_SIZE,    {"Set size to {} %",      {156, 89, 209, 255},{ParamType::NUMERIC}}},
+        {BlockType::CHANGE_SIZE,    {"Set size to {} %",      {156, 89, 209, 255},{ParamType::NUMERIC}}},
 
         // Events Blocks (Yellow)
         {BlockType::ON_FLAG_CLICKED, {"When flag clicked", {255, 193, 7, 255}}},
