@@ -5,7 +5,6 @@
 #include "script_area.h"
 #include "../core/config.h"
 #include "font.h"
-#include "../core/block_executor.h"
 
 
 extern Block* active_editing_block;
@@ -44,57 +43,6 @@ void initScriptArea(ScriptArea* area) {
     area->rect.w = windowConfig.width * 0.35;
     area->rect.h = windowConfig.height * 0.95;
     area->scroll_offset_y = 0;
-}
-
-void calculateLayout(std::vector<Block>& script, int start_index, int end_index, int& current_x, int& current_y) {
-    for (int i = start_index; i < end_index; ) {
-        Block& block = script[i];
-
-        block.rect = {current_x, current_y, 220, 40};
-
-        if (block.type == BlockType::IF || block.type == BlockType::REPEAT || block.type == BlockType::FOREVER) {
-            int end_block_or_else = block.jumpToIndex;
-            if (end_block_or_else <= i) { i++; continue; }
-
-            int content_height = 0;
-            if (end_block_or_else > i + 1) {
-                int inner_y = current_y + 40;
-                int inner_x = current_x + 20;
-                calculateLayout(script, i + 1, end_block_or_else, inner_x, inner_y);
-                content_height = inner_y - (current_y + 40);
-            }
-            if (content_height == 0) content_height = 30;
-            block.rect.h = 40 + content_height + 10;
-
-            if (block.type == BlockType::IF && end_block_or_else < script.size() && script[end_block_or_else].type == BlockType::ELSE) {
-                Block& else_block = script[end_block_or_else];
-                int end_if = else_block.jumpToIndex;
-                if(end_if <= end_block_or_else) { i = end_block_or_else + 1; continue; }
-
-                else_block.rect = {current_x, current_y + block.rect.h, 220, 40};
-
-                content_height = 0;
-                if (end_if > end_block_or_else + 1) {
-                    int inner_y = else_block.rect.y + 40;
-                    int inner_x = current_x + 20;
-                    calculateLayout(script, end_block_or_else + 1, end_if, inner_x, inner_y);
-                    content_height = inner_y - (else_block.rect.y + 40);
-                }
-                if (content_height == 0) content_height = 30;
-                else_block.rect.h = 40 + content_height + 10;
-
-                current_y += block.rect.h + else_block.rect.h + BLOCK_SPACING;
-                i = end_if + 1;
-            } else {
-                current_y += block.rect.h + BLOCK_SPACING;
-                i = end_block_or_else + 1;
-            }
-        }
-        else {
-            current_y += block.rect.h + BLOCK_SPACING;
-            i++;
-        }
-    }
 }
 
 
@@ -185,10 +133,9 @@ void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font) {
 }
 
 void calculateAndDrawScript(SDL_Renderer* renderer, std::vector<Block>& script, int start_index, int end_index, int& current_x, int& current_y, TTF_Font* font) {
-    for (int i = start_index; i < end_index; ) { // <<-- ++i را از اینجا حذف کنید
+    for (int i = start_index; i < end_index; ) {
         Block& block = script[i];
 
-        // نادیده گرفتن بلوک‌های پایانی و ELSE به صورت تنها
         if (block.type == BlockType::END_REPEAT || block.type == BlockType::END_IF || block.type == BlockType::ELSE) {
             i++;
             continue;
@@ -196,61 +143,79 @@ void calculateAndDrawScript(SDL_Renderer* renderer, std::vector<Block>& script, 
 
         block.rect = {current_x, current_y, 220, 40};
 
-        if (block.type == BlockType::REPEAT || block.type == BlockType::FOREVER || block.type == BlockType::IF) {
-            int end_block_or_else = block.jumpToIndex;
-            if (end_block_or_else <= i) { // بررسی امنیتی برای jump های نامعتبر
-                drawBlock(renderer, &block, font);
-                current_y += block.rect.h + BLOCK_SPACING;
-                i++;
-                continue;
+
+        if (block.type == BlockType::REPEAT || block.type == BlockType::FOREVER) {
+            int inner_block_start_index = i + 1;
+            int inner_end_index  = block.jumpToIndex;
+
+            int inner_x = current_x + 20;
+            int inner_y = current_y + block.rect.h;
+            int inner_content_height = 0;
+            if (inner_end_index  > inner_block_start_index) {
+                int temp_y_start = inner_y;
+                calculateAndDrawScript(renderer, script, inner_block_start_index, inner_end_index, inner_x, temp_y_start, font);
+                inner_content_height = temp_y_start - inner_y;
+            }
+            if (inner_content_height == 0) {
+                inner_content_height = 30;
             }
 
-            // --- محاسبه ارتفاع و ترسیم بازگشتی محتوای داخلی ---
-            int content_y_after_recursion = current_y + 40;
-            int inner_x = current_x + 20;
-            calculateAndDrawScript(renderer, script, i + 1, end_block_or_else, inner_x, content_y_after_recursion, font);
+            block.rect.h = 40 + inner_content_height + 10;
 
-            int content_height = content_y_after_recursion - (current_y + 40);
-            if (content_height < 0) content_height = 0;
-            if (content_height == 0) content_height = 30; // حداقل ارتفاع برای دهانه
-            block.rect.h = 40 + content_height + 10;
 
             drawBlock(renderer, &block, font);
 
-            // موقعیت Y برای شروع ترسیم ELSE یا بلوک بعدی
-            int next_y_start = current_y + block.rect.h;
+            current_y += block.rect.h + BLOCK_SPACING;
 
-            // --- بررسی و ترسیم بخش ELSE ---
-            if (block.type == BlockType::IF && end_block_or_else < script.size() && script[end_block_or_else].type == BlockType::ELSE) {
-                Block& else_block = script[end_block_or_else];
+            i = inner_end_index  + 1;
+        }
+        else if (block.type == BlockType::IF) {
+            int inner_if_start_index = i + 1;
+            int end_if_or_else_index = block.jumpToIndex;
+
+            int if_content_height = 0;
+            if (end_if_or_else_index > inner_if_start_index) {
+                int inner_x = current_x + 20;
+                int temp_y = current_y + 40;
+                calculateAndDrawScript(renderer, script, inner_if_start_index,end_if_or_else_index, inner_x, temp_y, font);
+                if_content_height = temp_y - (current_y + 40);
+            }
+            if (if_content_height == 0) if_content_height = 30;
+
+            block.rect.h = 40 + if_content_height + 10;
+            drawBlock(renderer, &block, font);
+
+            if (end_if_or_else_index < script.size() && script[end_if_or_else_index].type == BlockType::ELSE) {
+                Block& else_block = script[end_if_or_else_index];
+                int inner_else_start_index = end_if_or_else_index + 1;
                 int end_if_index = else_block.jumpToIndex;
-                if(end_if_index <= end_block_or_else) { i = end_block_or_else + 1; continue; }
 
-                else_block.rect = {current_x, next_y_start, 220, 40};
+                else_block.rect = {current_x, current_y + block.rect.h, 220, 40};
 
-                content_y_after_recursion = next_y_start + 40;
-                calculateAndDrawScript(renderer, script, end_block_or_else + 1, end_if_index, inner_x, content_y_after_recursion, font);
+                int else_content_height = 0;
+                if (end_if_index > inner_else_start_index) {
+                    int inner_x = current_x + 20;
+                    int temp_y = else_block.rect.y + 40;
+                    calculateAndDrawScript(renderer, script, inner_else_start_index,end_if_index, inner_x, temp_y, font);
+                    else_content_height = temp_y - (else_block.rect.y + 40);
+                }
+                if (else_content_height == 0) else_content_height = 30;
 
-                content_height = content_y_after_recursion - (next_y_start + 40);
-                if (content_height < 0) content_height = 0;
-                if (content_height == 0) content_height = 30;
-                else_block.rect.h = 40 + content_height + 10;
-
+                else_block.rect.h = 40 + else_content_height + 10;
                 drawBlock(renderer, &else_block, font);
 
-                next_y_start += else_block.rect.h; // ارتفاع ELSE را هم اضافه کن
-                i = end_if_index + 1; // پرش به بعد از END_IF
-            } else {
-                i = end_block_or_else + 1; // پرش به بعد از END_REPEAT یا END_IF
+                current_y += block.rect.h + else_block.rect.h + BLOCK_SPACING;
+                i = end_if_index + 1;
             }
-
-            // آپدیت نهایی current_y برای بلوک بعدی در *همین سطح*
-            current_y = next_y_start + BLOCK_SPACING;
+            else {
+                current_y += block.rect.h + BLOCK_SPACING;
+                i = end_if_or_else_index + 1;
+            }
         }
-        else { // برای بلوک‌های معمولی
+        else {
             drawBlock(renderer, &block, font);
             current_y += block.rect.h + BLOCK_SPACING;
-            i++; // فقط یک واحد به جلو برو
+            i++;
         }
     }
 }
@@ -264,19 +229,11 @@ void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSpri
     }
 
     for (auto& script : activeSprite->scripts) {
-        if(script.empty()) continue;
+        if (script.empty()) continue;
 
-        preprocessScript(script);
-        int start_x = script.front().rect.x;
-        int start_y = script.front().rect.y;
-        calculateLayout(script, 0, script.size(), start_x, start_y);
+        int current_x = script.front().rect.x;
+        int current_y = script.front().rect.y;
 
-        for (auto& block : script) {
-            Block temp_block = block;
-            temp_block.rect.y -= area->scroll_offset_y;
-            if (temp_block.rect.y + temp_block.rect.h > area->rect.y && temp_block.rect.y < area->rect.y + area->rect.h) {
-                drawBlock(renderer, &temp_block, font);
-            }
-        }
+        calculateAndDrawScript(renderer, script, 0,script.size(), current_x, current_y, font);
     }
 }
