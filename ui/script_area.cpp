@@ -39,6 +39,10 @@ std::map<BlockType, BlockAppearance> block_styles = {
 
         // Operators (Green)
         {BlockType::GREATER_THAN, { "{} > {}", {83, 193, 83, 255}, {ParamType::NUMERIC, ParamType::NUMERIC}}},
+
+        // Sound Blocks (Pink)
+        {BlockType::PLAY_SOUND, {"play sound {}", {208, 3, 147, 255}, {ParamType::STRING}}},
+
 };
 
 

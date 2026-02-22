@@ -170,8 +170,22 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
             }
             break;
         }
+        case BlockType::PLAY_SOUND: {
+            const std::string& sound_name_to_play = block.textParam;
+            if (sound_name_to_play.empty()) break;
 
-
+            for (const auto& sound : sprite.sounds) {
+                if (sound.name == sound_name_to_play + ".mp3") {
+                    Mix_PlayChannel(-1, sound.chunk, 0);
+                    break;
+                }
+                else if (sound.name == sound_name_to_play + ".wav") {
+                    Mix_PlayChannel(-1, sound.chunk, 0);
+                    break;
+                }
+            }
+            break;
+        }
 
         default:
             break;

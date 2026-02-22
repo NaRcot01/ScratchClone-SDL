@@ -25,6 +25,8 @@ void initBlockPalette(BlockPalette* palette) {
     btn_y += 35;
     palette->category_buttons.push_back({BlockCategory::LOOKS, {10, btn_y, 60, 25}, "Looks", {156, 89, 209, 255}});
     btn_y += 35;
+    palette->category_buttons.push_back({BlockCategory::SOUND, {10, btn_y, 60, 25}, "Sound", {208, 3, 147, 255}});
+    btn_y += 35;
     palette->category_buttons.push_back({BlockCategory::EVENTS, {10, btn_y, 60, 25}, "Events", {255, 193, 7, 255}});
     btn_y += 35;
     palette->category_buttons.push_back({BlockCategory::CONTROL, {10, btn_y, 60, 25}, "Control", {255, 171, 25, 255}});
@@ -51,6 +53,9 @@ void initBlockPalette(BlockPalette* palette) {
     palette->template_blocks.push_back(createTemplate(BlockType::IF,BlockCategory::CONTROL));
     // operators
     palette->template_blocks.push_back(createTemplate(BlockType::GREATER_THAN, BlockCategory::OPERATORS, {50, 0}));
+    // sound
+    palette->template_blocks.push_back(createTemplate(BlockType::PLAY_SOUND, BlockCategory::SOUND, {}, "kick"));
+
 }
 
 
