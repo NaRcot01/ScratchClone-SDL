@@ -219,6 +219,14 @@ void executeInstantBlock (const Block &block , Sprite & sprite  ){
             }
             break;
         }
+        case BlockType::SAY: {
+            if (!block.textParam.empty()) {
+                sprite.is_saying = true;
+                sprite.say_text = block.textParam;
+                sprite.say_timer = 2.0;
+            }
+            break;
+        }
 
 
         default:

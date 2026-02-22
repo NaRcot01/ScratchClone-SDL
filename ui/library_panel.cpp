@@ -49,7 +49,8 @@ void initLibraryPanel(LibraryPanel* panel, SDL_Renderer* renderer, const std::ve
             };
             panel->itemRects.push_back(itemRect);
         } else {
-            // log : error while loading library. pictures are missing
+            // log :
+            script_logs.push_back(" error while loading library. pictures are missing");
         }
     }
 }

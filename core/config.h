@@ -20,3 +20,4 @@ extern std::vector<std::string> backdrop_library_files;
 constexpr int PANEL_ITEM_HEIGHT = 60;
 constexpr int PANEL_ITEM_MARGIN = 10;
 constexpr int BLOCK_SPACING = 5;
+extern std::vector<std::string> script_logs;

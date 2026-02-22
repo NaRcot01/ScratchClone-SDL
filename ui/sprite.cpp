@@ -64,7 +64,8 @@ void moveSprite(Sprite *sprite, int x, int y, const Stage *stage, bool different
 bool loadSpriteTexture(SDL_Renderer *renderer, Sprite &sprite, std::string path) {
     SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
-        // log : can not load sprite image!
+        // log :
+        script_logs.push_back("can not load sprite image!");
         return false;
     }
 
@@ -132,7 +133,8 @@ void addNewSpriteFromFile(SDL_Renderer* renderer, const char* filePath, Stage& s
 
         if (copyFile(sourceFilePath, dest_full_path)) {}
         else {
-                // log : error while transferring file to library
+                // log :
+            script_logs.push_back("error while transferring file to library");
         }
 
         full_path_to_load = dest_full_path;

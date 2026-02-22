@@ -49,7 +49,8 @@ void addNewBackgroundFromFile(SDL_Renderer* renderer, Stage* stage, const char* 
 
     SDL_Surface* surface = IMG_Load(filePath);
     if (!surface) {
-        // log : unable to load the image that has been inserted as stage background.
+        // log :
+        script_logs.push_back("unable to load the image that has been inserted as stage background.");
         return;
     }
 
@@ -74,6 +75,7 @@ void addNewBackgroundFromFile(SDL_Renderer* renderer, Stage* stage, const char* 
 
         stage->backgrounds.push_back(new_backdrop);
         stage->active_background_index = stage->backgrounds.size() - 1;
-        // log :  new stage background has added and set as active.
+        // log :
+        script_logs.push_back("new stage background has added and set as active.");
     }
 }

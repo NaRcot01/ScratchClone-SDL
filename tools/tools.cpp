@@ -21,7 +21,8 @@ std::string generateRandomName(int length){
 bool copyFile(std::string sourcePath, std::string destPath){
     std::ifstream source(sourcePath,std::ios::binary);
     if(!source){
-        // log : can not add sprite from system files to library
+        // log :
+        script_logs.push_back("can not add sprite from system files to library");
         return false;
     }
 

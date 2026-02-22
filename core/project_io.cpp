@@ -224,7 +224,8 @@ static bool loadStage(std::ifstream& in, Stage& st, SDL_Renderer* renderer) {
                 if(tex) {
                     st.backgrounds.push_back({tex, name, file_path});
                 } else {
-                    // log :  "Failed to load backdrop: "  full_path
+                    // log :
+                    script_logs.push_back("Failed to load backdrop: " + full_path);
                 }
             }
         }

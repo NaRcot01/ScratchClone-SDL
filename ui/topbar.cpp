@@ -79,6 +79,14 @@ void initTopBar(TopBar *bar) {
     bar->buttons[bar->buttonCount] = load_btn;
     bar->buttonCount++;
 
+    TopBarButton log_btn;
+    log_btn.rect.w = bar->rect.w / 15;
+    log_btn.rect.x = load_btn.rect.x + load_btn.rect.w + 10;
+    log_btn.rect.y = 5;
+    log_btn.rect.h = bar->rect.h - 10;
+    log_btn.type = BTN_LOG_PANEL;
+    log_btn.text = "Log";
+    bar->buttons[bar->buttonCount++] = log_btn;
 
 }
 

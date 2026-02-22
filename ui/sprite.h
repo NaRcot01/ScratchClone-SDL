@@ -30,6 +30,10 @@ struct Sprite{
     SDL_RendererFlip flip_mode = SDL_FLIP_NONE;
     std::string costume_path;
     std::vector<Sound> sounds;
+
+    bool is_saying = false;
+    std::string say_text;
+    double say_timer = 0.0;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

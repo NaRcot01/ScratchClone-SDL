@@ -249,6 +249,7 @@ void applyPropertyToSprite(PropertyRow &row, Sprite *sprite, Stage *stage) {
         }
     }
     catch (...) {
-        // log : error while updating sprite info
+        // log :
+        script_logs.push_back(" error while updating sprite info");
     }
 }

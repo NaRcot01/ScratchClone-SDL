@@ -24,6 +24,8 @@
 #include "../ui/backdrop_porperty_panel.h"
 #include "project_io.h"
 #include "../ui/sound_panel.h"
+#include "../ui/log_panel.h"
+
 // ================
 // Global Variables
 // ================
@@ -45,6 +47,7 @@ ControlPanel controlPanel;
 BackgroundPanel backgroundPanel;
 BackdropPropertyPanel backdropPropertyPanel;
 SoundPanel soundPanel;
+LogPanel logPanel;
 
 
 bool showSpritePanel = false;
@@ -52,7 +55,7 @@ bool showBGPanel = false;
 bool showLibraryPanel = false;
 bool showBackdropLibrary = false;
 bool showSoundPanel = false;
-
+bool showLogPanel = false;
 
 std::vector<ScriptState> running_scripts;
 std::vector<std::string> script_logs;
@@ -93,6 +96,7 @@ void engineInit(Engine &engine) {
 
 void resetProject(SDL_Renderer* renderer, Engine &engine) {
     // log : initializing new project
+    script_logs.push_back("initializing new project");
 
     for (auto& sprite : sprites) {
         if(sprite.texture) SDL_DestroyTexture(sprite.texture);
@@ -407,7 +411,8 @@ void handleMouseUp(SDL_Event& event) {
             drop_handled = true;
         }
         else if (SDL_PointInRect(&mouse_point, &blockPalette.block_panel_rect)) {
-            // log : script deleted
+            // log :
+            script_logs.push_back("script deleted");
             drop_handled = true;
         }
         else{
@@ -546,7 +551,8 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
     // control buttons
     if (SDL_PointInRect(&mouse_point, &controlPanel.green_flag_rect)) {
         engine.is_running_scripts = true;
-        // log : green flag clicked. starting scripts
+        // log :
+        script_logs.push_back("green flag clicked. starting scripts");
         running_scripts.clear();
         for (int i = 0; i < sprites.size(); i++) {
             sprites[i].x = sprites[i].rect.x;
@@ -566,7 +572,8 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
     }
     if (SDL_PointInRect(&mouse_point, &controlPanel.stop_button_rect)) {
         engine.is_running_scripts = false;
-        // log : stop button clicked! stoping all scripts
+        // log :
+        script_logs.push_back("stop button clicked! stoping all scripts");
          return;
     }
 
@@ -578,16 +585,25 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                 showSpritePanel = !showSpritePanel;
                 showBGPanel = false;
                 showSoundPanel = false;
+                showLogPanel = false;
             }
             else if (btn.type == BTN_STAGE_PANEL) {
                 showBGPanel = !showBGPanel;
                 showSpritePanel = false;
                 showSoundPanel = false;
+                showLogPanel = false;
             }
             else if (btn.type == BTN_SOUNDS_PANEL) {
                 showSoundPanel = !showSoundPanel;
                 showSpritePanel = false;
                 showBGPanel = false;
+                showLogPanel = false;
+            }
+            else if (btn.type == BTN_LOG_PANEL) {
+                showLogPanel = !showLogPanel;
+                showBGPanel = false;
+                showSoundPanel = false;
+                showSpritePanel = false;
             }
             else if (btn.type == BTN_SAVE_PROJECT) {
                 const char* filterPatterns[1] = {"*.json"};
@@ -600,7 +616,8 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                 );
                 if (path) {
                     if (saveProject(path)) {
-                        // log : successfully the project has been saved
+                        // log :
+                        script_logs.push_back("successfully the project has been saved");
                     } else {
                         // log : saving project encounter error !
                     }
@@ -622,9 +639,11 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
                     running_scripts.clear();
 
                     if (loadProject(path, renderer)) {
-                        // log : successfully the project has been loaded
+                        // log :
+                        script_logs.push_back("successfully the project has been loaded");
                     } else {
-                        // log : loading project encounter error !
+                        // log :
+                        script_logs.push_back("loading project encounter error !");
                     }
                 }
             }
@@ -1067,6 +1086,7 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
             // log : Sprite activeSprite->name selected from stage.
 
 
+
             return;
         }
     }
@@ -1150,6 +1170,13 @@ void engineUpdate(Engine &engine) {
                           running_scripts.end());
 
     for (auto &sprite: sprites) {
+        if (sprite.is_saying) {
+            sprite.say_timer -= deltaTime;
+            if (sprite.say_timer <= 0.0) {
+                sprite.is_saying = false;
+                sprite.say_timer = 0.0;
+            }
+        }
         sprite.rect.x = sprite.x;
         sprite.rect.y = sprite.y;
         sprite.rotation = sprite.direction;
@@ -1221,6 +1248,7 @@ void initBase(SDL_Renderer *renderer) {
     initBackgroundPanel(&backgroundPanel, renderer);
     initBackdropPropertyPanel(&backdropPropertyPanel, renderer);
     initSoundPanel(&soundPanel, renderer);
+    initLogPanel(&logPanel);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -1268,9 +1296,31 @@ void engineDraw(SDL_Renderer *renderer) {
     }
 
     for(auto& sprite : sprites){
+        if (sprite.is_saying && sprite.show) {
+
+            int text_w, text_h;
+            my_TTF_SizeUTF8(font, sprite.say_text.c_str(), &text_w, &text_h);
+
+            SDL_Rect bubble_rect;
+            bubble_rect.w = text_w + 20;
+            bubble_rect.h = text_h + 10;
+            bubble_rect.x = sprite.rect.x + sprite.rect.w;
+            bubble_rect.y = sprite.rect.y - bubble_rect.h;
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderFillRect(renderer, &bubble_rect);
+            SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+            SDL_RenderDrawRect(renderer, &bubble_rect);
+
+            drawText(renderer, font, sprite.say_text, bubble_rect.x + 10, bubble_rect.y + 5, {0, 0, 0, 255});
+
+        }
         spriteValidate(&sprite,&stage);
     }
 
+    if (showLogPanel) {
+        drawLogPanel(renderer, &logPanel, script_logs, font);
+    }
 
     SDL_RenderPresent(renderer);
 }
