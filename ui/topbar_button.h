@@ -14,7 +14,8 @@ enum TopBarButtonType{
     BTN_STAGE_PANEL,
     BTN_SAVE_PROJECT,
     BTN_LOAD_PROJECT,
-    BTN_NEW_PROJECT
+    BTN_NEW_PROJECT,
+    BTN_SOUNDS_PANEL
 };
 
 struct TopBarButton{

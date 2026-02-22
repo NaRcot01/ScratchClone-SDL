@@ -16,6 +16,8 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::TURN_RIGHT,  {"Turn right {} degrees", { 76, 151, 255, 255},{ParamType::NUMERIC}}},
         {BlockType::TURN_LEFT,   {"Turn left {} degrees",  { 76, 151, 255, 255},{ParamType::NUMERIC}}},
         {BlockType::GO_TO_XY,    {"Go to x: {} y: {}",     { 76, 151, 255, 255},{ParamType::NUMERIC,ParamType::NUMERIC}}},
+        {BlockType::X_POSITION,  {"x position",            { 76, 151, 255, 255}, {}}},
+        {BlockType::Y_POSITION,  {"y position",            { 76, 151, 255, 255}, {}}},
 
         // Looks Blocks (Purple)
         {BlockType::SAY,         {"Say {}",                {156, 89, 209, 255},{ParamType::STRING}}},
@@ -30,13 +32,13 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::WAIT,        {"Wait {} seconds",       {255, 171, 25, 255},{ParamType::NUMERIC}}},
         {BlockType::REPEAT,      {"Repeat {}",             {255, 171, 25, 255},{ParamType::NUMERIC}}},
         {BlockType::FOREVER,     {"Forever",               {255, 171, 25, 255}}},
-        {BlockType::IF,          {"If <> then",            {255, 171, 25, 255},{ParamType::NUMERIC}}},
+        {BlockType::IF, {"If {} then", {255, 171, 25, 255}, {ParamType::BLOCK_BOOLEAN}}},
         {BlockType::ELSE,        {"Else",                  {255, 171, 25, 255}}},
         {BlockType::END_IF,      {"",                {255, 171, 25, 255}}},
         {BlockType::END_REPEAT,  {"",            {255, 171, 25, 255}}},
 
         // Operators (Green)
-        {BlockType::GREATER_THAN, { "{} > {}", {83, 193, 83, 255}, {ParamType::BLOCK_REPORTER, ParamType::BLOCK_REPORTER}}},
+        {BlockType::GREATER_THAN, { "{} > {}", {83, 193, 83, 255}, {ParamType::NUMERIC, ParamType::NUMERIC}}},
 };
 
 
@@ -48,9 +50,22 @@ void initScriptArea(ScriptArea* area) {
     area->scroll_offset_y = 0;
 }
 
+void drawHexagon(SDL_Renderer* renderer, const SDL_Rect& rect) {
+    SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+}
+
+void drawRoundedRect(SDL_Renderer* renderer, const SDL_Rect& rect) {
+    SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+}
 
 void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font) {
-
+    BlockAppearance style = block_styles.count(block->type) ? block_styles[block->type] : BlockAppearance{"Unknown", {128, 128, 128, 255}, {}};
     SDL_Color color = block_styles.count(block->type) ? block_styles[block->type].color : SDL_Color{128, 128, 128, 255};
     if (block->type == BlockType::REPEAT || block->type == BlockType::FOREVER || block->type == BlockType::IF || block->type == BlockType::ELSE) {
         SDL_Rect top_part = {block->rect.x, block->rect.y, block->rect.w, 40};
@@ -92,44 +107,74 @@ void drawBlock(SDL_Renderer* renderer, Block* block, TTF_Font* font) {
             current_x += text_w;
         }
 
-
         if (end_pos == std::string::npos) break;
 
+        if (param_idx < style.param_types.size()) {
+            ParamType p_type = style.param_types[param_idx];
 
+            if (p_type == ParamType::BLOCK_BOOLEAN || p_type == ParamType::BLOCK_REPORTER) {
 
-        std::string param_value_str;
-        if (!block->textParam.empty()) {
-            param_value_str = block->textParam;
-        } else if (param_idx < block->parameters.size()) {
-            param_value_str = std::to_string((int)block->parameters[param_idx]);
+                if (param_idx < block->block_parameters.size() && block->block_parameters[param_idx]) {
+
+                    Block inner_block_copy = *block->block_parameters[param_idx];
+
+                    inner_block_copy.rect = {current_x, block->rect.y + 5, 80, 30};
+
+                    drawBlock(renderer, &inner_block_copy, font);
+
+                    current_x += inner_block_copy.rect.w + 5;
+                }
+                else {
+                    SDL_Rect placeholder_rect = {current_x, block->rect.y + 5, 80, 30};
+                    block->param_rects.push_back(placeholder_rect);
+
+                    if (p_type == ParamType::BLOCK_BOOLEAN) drawHexagon(renderer, placeholder_rect);
+                    else drawRoundedRect(renderer, placeholder_rect);
+
+                    if (active_editing_block == block && active_editing_param_index == param_idx) {
+                        SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255);
+                        for(int i=0; i<2; ++i) {
+                            SDL_Rect border = {placeholder_rect.x-i, placeholder_rect.y-i, placeholder_rect.w+i*2, placeholder_rect.h+i*2};
+                            SDL_RenderDrawRect(renderer, &border);
+                        }
+                    }
+                    current_x += placeholder_rect.w + 5;
+                }
+            }
+            else {
+                std::string param_value_str;
+                if (p_type == ParamType::STRING) {
+                    param_value_str = block->textParam;
+                } else if (p_type == ParamType::NUMERIC && param_idx < block->parameters.size()) {
+                    param_value_str = std::to_string((int)block->parameters[param_idx]);
+                }
+                if (param_value_str.empty()) param_value_str = " ";
+
+                int input_w, input_h;
+                my_TTF_SizeUTF8(font, param_value_str.c_str(), &input_w, &input_h);
+                input_w += 10;
+                if (input_w < 30) input_w = 30;
+
+                SDL_Rect param_r = {current_x, current_y - 2, input_w, input_h + 4};
+                block->param_rects.push_back(param_r);
+
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                SDL_RenderFillRect(renderer, &param_r);
+
+                if (active_editing_block == block && active_editing_param_index == param_idx) {
+                    SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255);
+                    for(int i=0; i<2; ++i) {
+                        SDL_Rect border = {param_r.x-i, param_r.y-i, param_r.w+i*2, param_r.h+i*2};
+                        SDL_RenderDrawRect(renderer, &border);
+                    }
+                }
+
+                drawText(renderer, font, param_value_str, param_r.x + 5, param_r.y + 2, {0, 0, 0, 255});
+                current_x += param_r.w + 5;
+            }
         }
 
-        int input_w, input_h;
-        my_TTF_SizeUTF8(font, param_value_str.c_str(), &input_w, &input_h);
-        input_w += 10;
-        if (input_w < 30) input_w = 30;
-
-
-        SDL_Rect param_r = {current_x, current_y - 2, input_w, input_h + 4};
-        block->param_rects.push_back(param_r);
-
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &param_r);
-
-        if (active_editing_block == block && active_editing_param_index == param_idx) {
-            SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255);
-
-            SDL_RenderDrawRect(renderer, &param_r);
-            param_r.x -= 1; param_r.y -= 1; param_r.w += 2; param_r.h += 2;
-            SDL_RenderDrawRect(renderer, &param_r);
-        }
-
-        drawText(renderer, font, param_value_str, param_r.x + 5, param_r.y + 2, {0, 0, 0, 255});
-
-
-        current_x += param_r.w;
         param_idx++;
-
         start_pos = end_pos + 2;
         end_pos = text_template.find("{}", start_pos);
     }

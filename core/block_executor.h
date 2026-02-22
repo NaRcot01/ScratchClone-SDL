@@ -20,3 +20,4 @@ struct ScriptState {
 
 void preprocessScript(std::vector<Block>& v);
 void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vector<std::string>& logs);
+double evaluateReporter(const Block& reporter, const Sprite& sprite);

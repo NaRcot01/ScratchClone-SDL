@@ -9,6 +9,7 @@
 #include <vector>
 #include "block.h"
 #include "../core/config.h"
+#include "sound.h"
 
 struct Sprite{
     SDL_Rect rect;
@@ -28,6 +29,7 @@ struct Sprite{
     double direction = 0;
     SDL_RendererFlip flip_mode = SDL_FLIP_NONE;
     std::string costume_path;
+    std::vector<Sound> sounds;
 };
 
 void initSprite(Sprite& sprite, const Stage* stage);

@@ -224,10 +224,19 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
     }
     else if (currentBlock.type == BlockType::IF) {
         bool condition = false;
-        if (!currentBlock.parameters.empty()) condition = (currentBlock.parameters[0] != 0);
 
-        if (condition) state.pc++;
-        else state.pc = currentBlock.jumpToIndex;
+        if (!currentBlock.block_parameters.empty() && currentBlock.block_parameters[0]) {
+            condition = (evaluateReporter(*currentBlock.block_parameters[0], sprite) != 0.0);
+        }
+        else if (!currentBlock.parameters.empty()) {
+            condition = (currentBlock.parameters[0] != 0);
+        }
+
+        if (condition) {
+            state.pc++;
+        } else {
+            state.pc = currentBlock.jumpToIndex;
+        }
     }
     else if (currentBlock.type == BlockType::ELSE) {
         state.pc = currentBlock.jumpToIndex;
@@ -264,18 +273,32 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
 
 }
 
+double getParamValue (int param_index,const Block& reporter,const Sprite& sprite){
+
+    if (param_index < reporter.block_parameters.size() && reporter.block_parameters[param_index]) {
+        return evaluateReporter(*reporter.block_parameters[param_index], sprite);
+    }
+    if (param_index < reporter.parameters.size()) {
+        return reporter.parameters[param_index];
+    }
+    return 0.0;
+}
+
 double evaluateReporter(const Block& reporter, const Sprite& sprite) {
-    auto getParamValue = [&](int param_index) -> double { /* ... */ };
 
     switch (reporter.type) {
-        // ... (case های X_POSITION و ...)
-
+        case BlockType::X_POSITION:
+            return sprite.x;
+        case BlockType::Y_POSITION:
+            return sprite.y;
+            // TODO: افزودن direction, size, ...
 
         case BlockType::GREATER_THAN: {
-            double val1 = getParamValue(0);
-            double val2 = getParamValue(1);
+            double val1 = getParamValue(0,reporter,sprite);
+            double val2 = getParamValue(1,reporter,sprite);
             return (val1 > val2) ? 1.0 : 0.0;
         }
+            // TODO: افزودن <, =, +, -, *, /
 
         default:
             return 0.0;

@@ -13,6 +13,8 @@ extern std::string ASSETS_PATH;
 extern void preprocessScript(std::vector<Block>& v);
 extern void addNewBackgroundFromFile(SDL_Renderer* renderer, Stage* stage, const char* filePath);
 extern bool loadSpriteTexture(SDL_Renderer *renderer, Sprite &sprite, std::string path);
+static void saveBlock(std::ofstream& out, const Block& b, int indent_level);
+static Block loadBlock(std::ifstream& in);
 
 static void saveSprite(std::ofstream& out, const Sprite& s) {
     out << "SPRITE\n";
@@ -32,17 +34,29 @@ static void saveSprite(std::ofstream& out, const Sprite& s) {
 
         out << "SCRIPT_BLOCKS " << script_blocks.size() << " " << script_x << " " << script_y << "\n";
         for (const Block& b : script_blocks) {
-            out << "BLOCK ";
-            out << static_cast<int>(b.type) << " ";
-            out << b.jumpToIndex << " ";
-            out << b.parameters.size();
-            for (double v : b.parameters) {
-                out << " " << std::fixed << std::setprecision(6) << v;
-            }
-            out << " " << (b.textParam.empty() ? "-" : b.textParam) << "\n";
+            saveBlock(out, b, 1);
         }
     }
     out << "END_SPRITE\n";
+}
+
+static void saveBlock(std::ofstream& out, const Block& b, int indent_level) {
+    std::string indent(indent_level, '\t');
+    out << indent << "BLOCK ";
+    out << static_cast<int>(b.type) << " ";
+    out << b.jumpToIndex << " ";
+    out << b.parameters.size();
+    for (double v : b.parameters) { out << " " << std::fixed << std::setprecision(6) << v; }
+    out << " " << (b.textParam.empty() ? "-" : b.textParam);
+
+    out << " " << b.block_parameters.size() << "\n";
+    for (const auto& inner_block_ptr : b.block_parameters) {
+        if (inner_block_ptr) {
+            saveBlock(out, *inner_block_ptr, indent_level + 1);
+        } else {
+            out << std::string(indent_level + 1, '\t') << "NULL_BLOCK\n";
+        }
+    }
 }
 
 static void saveStage(std::ofstream& out, const Stage& st) {
@@ -101,19 +115,8 @@ static bool loadSprite(std::ifstream& in, Sprite& s, SDL_Renderer* renderer) {
                 int script_x, script_y;
                 script_ss >> blockCount >> script_x >> script_y;
 
-                s.scripts[i].reserve(blockCount);
                 for (size_t b = 0; b < blockCount; ++b) {
-                    std::getline(in, line); std::stringstream block_ss(line);
-                    block_ss >> token;
-                    Block blk;
-                    int typeInt; block_ss >> typeInt; blk.type = static_cast<BlockType>(typeInt);
-                    block_ss >> blk.jumpToIndex;
-                    size_t paramCount; block_ss >> paramCount;
-                    blk.parameters.resize(paramCount);
-                    for (size_t p = 0; p < paramCount; ++p) block_ss >> blk.parameters[p];
-                    block_ss >> blk.textParam;
-                    if(blk.textParam == "-") blk.textParam = "";
-                    s.scripts[i].push_back(blk);
+                    s.scripts[i].push_back(loadBlock(in));
                 }
                 if (!s.scripts[i].empty()) {
                     s.scripts[i].front().rect.x = script_x;
@@ -133,6 +136,38 @@ static bool loadSprite(std::ifstream& in, Sprite& s, SDL_Renderer* renderer) {
         loadSpriteTexture(renderer, s, ASSETS_PATH + "test.bmp");
     }
     return true;
+}
+
+static Block loadBlock(std::ifstream& in) {
+    std::string line, token;
+    std::getline(in, line);
+    std::stringstream ss(line);
+
+    ss >> token;
+    if (token == "NULL_BLOCK") {
+        Block blk; blk.type = (BlockType)-1; return blk;
+    }
+
+    Block blk;
+    int typeInt; ss >> typeInt; blk.type = static_cast<BlockType>(typeInt);
+    ss >> blk.jumpToIndex;
+    size_t paramCount; ss >> paramCount;
+    blk.parameters.resize(paramCount);
+    for (size_t p = 0; p < paramCount; ++p) ss >> blk.parameters[p];
+    ss >> blk.textParam;
+    if(blk.textParam == "-") blk.textParam = "";
+
+    size_t blockParamCount; ss >> blockParamCount;
+    if (blockParamCount > 0) {
+        blk.block_parameters.resize(blockParamCount);
+        for (size_t bp = 0; bp < blockParamCount; ++bp) {
+            Block inner_block = loadBlock(in);
+            if((int)inner_block.type != -1) {
+                blk.block_parameters[bp] = std::make_unique<Block>(inner_block);
+            }
+        }
+    }
+    return blk;
 }
 
 static bool loadStage(std::ifstream& in, Stage& st, SDL_Renderer* renderer) {
@@ -185,7 +220,12 @@ bool loadProject(const std::string& path, SDL_Renderer* renderer) {
     std::getline(in, line);
     if (line != "SCRATCH_CLONE_PROJECT_V1") return false;
 
-    for (auto& sprite : sprites) { if(sprite.texture) SDL_DestroyTexture(sprite.texture); }
+    for (auto& sprite : sprites) {
+        if(sprite.texture) SDL_DestroyTexture(sprite.texture);
+        for(auto& sound : sprite.sounds) {
+            if(sound.chunk) Mix_FreeChunk(sound.chunk);
+        }
+    }
     sprites.clear();
     for (auto& backdrop : stage.backgrounds) { if(backdrop.texture) SDL_DestroyTexture(backdrop.texture); }
     stage.backgrounds.clear();

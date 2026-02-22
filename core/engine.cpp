@@ -5,6 +5,7 @@
 #include <random>
 #include <ctime>
 #include <algorithm>
+#include <memory>
 #include "engine.h"
 #include "config.h"
 #include "../ui/sprite_panel.h"
@@ -22,7 +23,7 @@
 #include "../ui/background_panel.h"
 #include "../ui/backdrop_porperty_panel.h"
 #include "project_io.h"
-
+#include "../ui/sound_panel.h"
 // ================
 // Global Variables
 // ================
@@ -43,12 +44,14 @@ BlockPalette blockPalette;
 ControlPanel controlPanel;
 BackgroundPanel backgroundPanel;
 BackdropPropertyPanel backdropPropertyPanel;
+SoundPanel soundPanel;
 
 
 bool showSpritePanel = false;
 bool showBGPanel = false;
 bool showLibraryPanel = false;
 bool showBackdropLibrary = false;
+bool showSoundPanel = false;
 
 
 std::vector<ScriptState> running_scripts;
@@ -91,7 +94,12 @@ void engineInit(Engine &engine) {
 void resetProject(SDL_Renderer* renderer, Engine &engine) {
     // log : initializing new project
 
-    for (auto& sprite : sprites) { if(sprite.texture) SDL_DestroyTexture(sprite.texture); }
+    for (auto& sprite : sprites) {
+        if(sprite.texture) SDL_DestroyTexture(sprite.texture);
+        for(auto& sound : sprite.sounds) {
+            if(sound.chunk) Mix_FreeChunk(sound.chunk);
+        }
+    }
     for (auto& backdrop : stage.backgrounds) { if(backdrop.texture) SDL_DestroyTexture(backdrop.texture); }
 
     sprites.clear();
@@ -118,6 +126,30 @@ void resetProject(SDL_Renderer* renderer, Engine &engine) {
     activeSprite = &sprites[0];
     panelSelectedIndex = 0;
     propertyPanel.visible = true;
+}
+
+void addNewSoundFromFile(Sprite* sprite, const std::string& filePath) {
+    if (!sprite || filePath.empty()) return;
+
+    Mix_Chunk* chunk = Mix_LoadWAV(filePath.c_str());
+    if (!chunk) {
+        std::cerr << "Failed to load sound: " << Mix_GetError() << std::endl;
+        return;
+    }
+
+    size_t last_slash = filePath.find_last_of("/\\");
+    std::string name = (last_slash == std::string::npos) ? filePath : filePath.substr(last_slash + 1);
+
+    std::string relative_path;
+    size_t pos = filePath.find(ASSETS_PATH);
+    if (pos != std::string::npos) {
+        relative_path = filePath.substr(pos + ASSETS_PATH.length());
+    } else {
+        relative_path = filePath;
+    }
+
+    sprite->sounds.push_back({chunk, name, relative_path});
+    std::cout << "Sound '" << name << "' added to sprite '" << sprite->name << "'" << std::endl;
 }
 
 void handleKeyDown(SDL_Event& event) {
@@ -270,65 +302,108 @@ void handleMouseUp(SDL_Event& event) {
 
         if (activeSprite && SDL_PointInRect(&mouse_point, &scriptArea.rect)) {
 
-            if (drag_state.show_snap_preview) {
-                int dx = drag_state.snap_preview_rect.x - drag_state.dragged_script.front().rect.x;
-                int dy = drag_state.snap_preview_rect.y - drag_state.dragged_script.front().rect.y;
-                for (auto& block : drag_state.dragged_script) {
-                    block.rect.x += dx;
-                    block.rect.y += dy;
-                }
-            }
+            bool parameter_dropped = false;
+            if (drag_state.dragged_script.size() == 1) {
+                Block& dragged_block = drag_state.dragged_script.front();
+                bool is_reporter_or_boolean = (
+                        dragged_block.category == BlockCategory::MOTION || // x position, y position
+                        dragged_block.category == BlockCategory::OPERATORS // >, <, =
 
-            bool merged = false;
-            for (int i = 0; i < activeSprite->scripts.size(); ++i) {
-                auto& target_script = activeSprite->scripts[i];
-                if (target_script.empty()) continue;
+                );
 
-                for (int j = 0; j < target_script.size(); ++j) {
-                    Block& target_block = target_script[j];
-                    if (target_block.type == BlockType::REPEAT || target_block.type == BlockType::FOREVER || target_block.type == BlockType::IF  || target_block.type == BlockType::ELSE) {
-                        SDL_Rect inner_snap_zone = {target_block.rect.x + 20, target_block.rect.y + 40, target_block.rect.w - 20, target_block.rect.h - 50};
-                        if (SDL_PointInRect(&mouse_point, &inner_snap_zone)) {
+                if (is_reporter_or_boolean) {
+                    for (auto& target_script : activeSprite->scripts) {
+                        for (auto& target_block : target_script) {
+                            for (int i = 0; i < target_block.param_rects.size(); ++i) {
+                                if (SDL_PointInRect(&mouse_point, &target_block.param_rects[i])) {
+                                    if (target_block.block_parameters.size() <= i) {
+                                        target_block.block_parameters.resize(i + 1);
+                                    }
 
-                            target_script.insert(
-                                    target_script.begin() + j + 1,
-                                    drag_state.dragged_script.begin(),
-                                    drag_state.dragged_script.end()
-                            );
+                                    target_block.block_parameters[i] = std::make_unique<Block>(dragged_block);
 
-                            preprocessScript(target_script);
-                            merged = true;
-                            break;
+                                    preprocessScript(target_script);
+                                    int start_x = target_script.front().rect.x, start_y = target_script.front().rect.y;
+                                    calculateLayout(target_script, 0, target_script.size(), start_x, start_y);
+
+                                    parameter_dropped = true;
+                                    goto end_all_param_drop_checks;
+                                }
+                            }
                         }
                     }
                 }
+            }
+            end_all_param_drop_checks:;
 
-                Block& dragged_first = drag_state.dragged_script.front();
-                Block& dragged_last = drag_state.dragged_script.back();
-                Block& target_first = target_script.front();
-                Block& target_last = target_script.back();
 
-                if (abs((target_last.rect.y + target_last.rect.h) - dragged_first.rect.y) < 10) {
-                    target_script.insert(target_script.end(), drag_state.dragged_script.begin(), drag_state.dragged_script.end());
-                    preprocessScript(target_script);
-                    merged = true;
-                    break;
+
+            if(!parameter_dropped) {
+
+                if (drag_state.show_snap_preview) {
+                    int dx = drag_state.snap_preview_rect.x - drag_state.dragged_script.front().rect.x;
+                    int dy = drag_state.snap_preview_rect.y - drag_state.dragged_script.front().rect.y;
+                    for (auto &block: drag_state.dragged_script) {
+                        block.rect.x += dx;
+                        block.rect.y += dy;
+                    }
                 }
 
-                if (abs((dragged_last.rect.y + dragged_last.rect.h) - target_first.rect.y) < 10) {
-                    drag_state.dragged_script.insert(drag_state.dragged_script.end(), target_script.begin(), target_script.end());
-                    preprocessScript(target_script);
-                    target_script = drag_state.dragged_script;
-                    merged = true;
-                    break;
+                bool merged = false;
+                for (int i = 0; i < activeSprite->scripts.size(); ++i) {
+                    auto &target_script = activeSprite->scripts[i];
+                    if (target_script.empty()) continue;
+
+                    for (int j = 0; j < target_script.size(); ++j) {
+                        Block &target_block = target_script[j];
+                        if (target_block.type == BlockType::REPEAT || target_block.type == BlockType::FOREVER ||
+                            target_block.type == BlockType::IF || target_block.type == BlockType::ELSE) {
+                            SDL_Rect inner_snap_zone = {target_block.rect.x + 20, target_block.rect.y + 40,
+                                                        target_block.rect.w - 20, target_block.rect.h - 50};
+                            if (SDL_PointInRect(&mouse_point, &inner_snap_zone)) {
+
+                                target_script.insert(
+                                        target_script.begin() + j + 1,
+                                        drag_state.dragged_script.begin(),
+                                        drag_state.dragged_script.end()
+                                );
+
+                                preprocessScript(target_script);
+                                merged = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    Block &dragged_first = drag_state.dragged_script.front();
+                    Block &dragged_last = drag_state.dragged_script.back();
+                    Block &target_first = target_script.front();
+                    Block &target_last = target_script.back();
+
+                    if (abs((target_last.rect.y + target_last.rect.h) - dragged_first.rect.y) < 10) {
+                        target_script.insert(target_script.end(), drag_state.dragged_script.begin(),
+                                             drag_state.dragged_script.end());
+                        preprocessScript(target_script);
+                        merged = true;
+                        break;
+                    }
+
+                    if (abs((dragged_last.rect.y + dragged_last.rect.h) - target_first.rect.y) < 10) {
+                        drag_state.dragged_script.insert(drag_state.dragged_script.end(), target_script.begin(),
+                                                         target_script.end());
+                        preprocessScript(target_script);
+                        target_script = drag_state.dragged_script;
+                        merged = true;
+                        break;
+                    }
                 }
-            }
 
-            if (!merged) {
-                preprocessScript(drag_state.dragged_script);
-                activeSprite->scripts.push_back(drag_state.dragged_script);
-            }
+                if (!merged) {
+                    preprocessScript(drag_state.dragged_script);
+                    activeSprite->scripts.push_back(drag_state.dragged_script);
+                }
 
+            }
             drop_handled = true;
         }
         else if (SDL_PointInRect(&mouse_point, &blockPalette.block_panel_rect)) {
@@ -502,9 +577,17 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
             if (btn.type == BTN_SPRITE_PANEL) {
                 showSpritePanel = !showSpritePanel;
                 showBGPanel = false;
-            } else if (btn.type == BTN_STAGE_PANEL) {
+                showSoundPanel = false;
+            }
+            else if (btn.type == BTN_STAGE_PANEL) {
                 showBGPanel = !showBGPanel;
                 showSpritePanel = false;
+                showSoundPanel = false;
+            }
+            else if (btn.type == BTN_SOUNDS_PANEL) {
+                showSoundPanel = !showSoundPanel;
+                showSpritePanel = false;
+                showBGPanel = false;
             }
             else if (btn.type == BTN_SAVE_PROJECT) {
                 const char* filterPatterns[1] = {"*.json"};
@@ -586,6 +669,35 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
             }
         }
     }
+
+    // upload or play sound in sound panel
+    if (showSoundPanel && activeSprite) {
+        if (SDL_PointInRect(&mouse_point, &soundPanel.upload_button_rect)) {
+            const char* filterPatterns[2] = {"*.wav", "*.mp3"};
+            const char* path = tinyfd_openFileDialog(
+                    "Choose a Sound File", "", 2, filterPatterns, "Audio Files", 0);
+            if (path) {
+                addNewSoundFromFile(activeSprite, path);
+            }
+            return;
+        }
+
+        int current_y = soundPanel.upload_button_rect.y + soundPanel.upload_button_rect.h + 20;
+        for (const auto& sound : activeSprite->sounds) {
+            SDL_Rect item_rect = {soundPanel.rect.x + 10, current_y, soundPanel.rect.w - 20, 50};
+            SDL_Rect play_button_rect = {item_rect.x + 5, item_rect.y + 10, 30, 30};
+
+            if (SDL_PointInRect(&mouse_point, &play_button_rect)) {
+                Mix_PlayChannel(-1, sound.chunk, 0);
+                std::cout << "Playing sound: " << sound.name << std::endl;
+                return;
+            }
+            current_y += item_rect.h + 10;
+        }
+
+        if (SDL_PointInRect(&mouse_point, &soundPanel.rect)) return;
+    }
+
     // start a drag operation
     // from block palette
     if (SDL_PointInRect(&mouse_point, &blockPalette.block_panel_rect)) {
@@ -1094,6 +1206,7 @@ void initBase(SDL_Renderer *renderer) {
     initControlPanel(&controlPanel, renderer);
     initBackgroundPanel(&backgroundPanel, renderer);
     initBackdropPropertyPanel(&backdropPropertyPanel, renderer);
+    initSoundPanel(&soundPanel, renderer);
 }
 
 void engineDraw(SDL_Renderer *renderer) {
@@ -1106,7 +1219,10 @@ void engineDraw(SDL_Renderer *renderer) {
     drawSprites(renderer);
     drawTopBar(renderer, &topBar, font);
     drawControlPanel(renderer, &controlPanel);
-    if (showSpritePanel) {
+    if (showSoundPanel && activeSprite) {
+        drawSoundPanel(renderer, &soundPanel, activeSprite, font);
+    }
+    else if (showSpritePanel) {
         drawSpritePanels(renderer);
     } else if (showBGPanel) {
         drawBackgroundPanel(renderer, &backgroundPanel, &stage, font);
@@ -1136,6 +1252,7 @@ void engineDraw(SDL_Renderer *renderer) {
             drawBlock(renderer, &block, font);
         }
     }
+
 
     SDL_RenderPresent(renderer);
 }

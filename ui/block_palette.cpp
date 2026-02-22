@@ -37,6 +37,8 @@ void initBlockPalette(BlockPalette* palette) {
     palette->template_blocks.push_back(createTemplate(BlockType::TURN_RIGHT,BlockCategory::MOTION, {15}));
     palette->template_blocks.push_back(createTemplate(BlockType::TURN_LEFT,BlockCategory::MOTION, {15}));
     palette->template_blocks.push_back(createTemplate(BlockType::GO_TO_XY,BlockCategory::MOTION, {0, 0}));
+    palette->template_blocks.push_back(createTemplate(BlockType::X_POSITION, BlockCategory::MOTION));
+    palette->template_blocks.push_back(createTemplate(BlockType::Y_POSITION, BlockCategory::MOTION));
     // looks
     palette->template_blocks.push_back(createTemplate(BlockType::SAY,BlockCategory::LOOKS, {}, "Hello!"));
     palette->template_blocks.push_back(createTemplate(BlockType::SHOW,BlockCategory::LOOKS));
@@ -48,7 +50,7 @@ void initBlockPalette(BlockPalette* palette) {
     palette->template_blocks.push_back(createTemplate(BlockType::REPEAT,BlockCategory::CONTROL, {10}));
     palette->template_blocks.push_back(createTemplate(BlockType::IF,BlockCategory::CONTROL));
     // operators
-    palette->template_blocks.push_back(createTemplate(BlockType::GREATER_THAN, BlockCategory::OPERATORS, {0, 50}));
+    palette->template_blocks.push_back(createTemplate(BlockType::GREATER_THAN, BlockCategory::OPERATORS, {50, 0}));
 }
 
 

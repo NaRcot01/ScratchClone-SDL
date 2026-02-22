@@ -24,9 +24,20 @@ void initTopBar(TopBar *bar) {
     bar->buttons[bar->buttonCount] = sprite_btn;
     bar->buttonCount++;
 
+    TopBarButton sounds_btn;
+    sounds_btn.rect.x = sprite_btn.rect.x + sprite_btn.rect.w + 10;
+    sounds_btn.rect.y = 5;
+    sounds_btn.rect.h = bar->rect.h - 10;
+    sounds_btn.rect.w = bar->rect.w / 15;
+    sounds_btn.type = BTN_SOUNDS_PANEL;
+    sounds_btn.text = "Sounds";
+    bar->buttons[bar->buttonCount] = sounds_btn;
+    bar->buttonCount++;
+
+
 
     TopBarButton stage_btn;
-    stage_btn.rect.x = sprite_btn.rect.x + sprite_btn.rect.w + 20;
+    stage_btn.rect.x = sounds_btn.rect.x + sounds_btn.rect.w + 20;
     stage_btn.rect.y = 5;
     stage_btn.rect.h = bar->rect.h - 10;
     stage_btn.rect.w = bar->rect.w / 15;
