@@ -16,12 +16,25 @@ enum struct BlockType {
     END_REPEAT , END_IF ,
     ON_FLAG_CLICKED , CHANGE_X , CHANGE_Y , SET_SIZE ,
     ELSE, SET_VAR , CHANGE_VAR , BROADCAST ,
-    OP_ADD , OP_SUB , OP_MUL , OP_DIV , OP_EQUAL , OP_LESS , OP_GREATER , RAND
+    OP_ADD , OP_SUB , OP_MUL , OP_DIV , OP_EQUAL , OP_LESS , OP_GREATER , RAND , GREATER_THAN
+};
+
+enum struct BlockCategory {
+    MOTION,
+    LOOKS,
+    SOUND,
+    EVENTS,
+    CONTROL,
+    SENSING,
+    OPERATORS,
+    VARIABLES
 };
 
 enum struct ParamType {
     NUMERIC,
-    STRING
+    STRING,
+    BLOCK_REPORTER,
+    BLOCK_BOOLEAN
 };
 
 struct BlockAppearance {
@@ -35,6 +48,7 @@ extern std::map<BlockType, BlockAppearance> block_styles;
 
 struct Block {
     BlockType type;
+    BlockCategory category;
     std::vector<double> parameters;
     std::string textParam;
     int jumpToIndex = -1;

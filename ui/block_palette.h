@@ -7,11 +7,11 @@
 #include "font.h"
 #include <vector>
 
-enum struct BlockCategory {
-    MOTION,
-    LOOKS,
-    EVENTS,
-    CONTROL
+struct CategoryButton {
+    BlockCategory category;
+    SDL_Rect rect;
+    std::string text;
+    SDL_Color color;
 };
 
 struct BlockPalette {
@@ -19,6 +19,8 @@ struct BlockPalette {
     SDL_Rect block_panel_rect;
 
     BlockCategory selected_category = BlockCategory::MOTION;
+    std::vector<CategoryButton> category_buttons;
+    int scroll_offset_y = 0;
 
 
     std::vector<Block> template_blocks;

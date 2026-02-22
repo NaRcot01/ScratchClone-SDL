@@ -34,6 +34,9 @@ std::map<BlockType, BlockAppearance> block_styles = {
         {BlockType::ELSE,        {"Else",                  {255, 171, 25, 255}}},
         {BlockType::END_IF,      {"",                {255, 171, 25, 255}}},
         {BlockType::END_REPEAT,  {"",            {255, 171, 25, 255}}},
+
+        // Operators (Green)
+        {BlockType::GREATER_THAN, { "{} > {}", {83, 193, 83, 255}, {ParamType::BLOCK_REPORTER, ParamType::BLOCK_REPORTER}}},
 };
 
 
@@ -235,5 +238,56 @@ void drawScriptArea(SDL_Renderer* renderer, ScriptArea* area, Sprite* activeSpri
         int current_y = script.front().rect.y;
 
         calculateAndDrawScript(renderer, script, 0,script.size(), current_x, current_y, font);
+    }
+}
+
+void calculateLayout(std::vector<Block>& script, int start_index, int end_index, int& current_x, int& current_y) {
+    for (int i = start_index; i < end_index; ) {
+        Block& block = script[i];
+
+        block.rect = {current_x, current_y, 220, 40};
+
+        if (block.type == BlockType::IF || block.type == BlockType::REPEAT || block.type == BlockType::FOREVER) {
+            int end_block_or_else = block.jumpToIndex;
+            if (end_block_or_else <= i) { i++; continue; }
+
+            int content_height = 0;
+            if (end_block_or_else > i + 1) {
+                int inner_y = current_y + 40;
+                int inner_x = current_x + 20;
+                calculateLayout(script, i + 1, end_block_or_else, inner_x, inner_y);
+                content_height = inner_y - (current_y + 40);
+            }
+            if (content_height == 0) content_height = 30;
+            block.rect.h = 40 + content_height + 10;
+
+            if (block.type == BlockType::IF && end_block_or_else < script.size() && script[end_block_or_else].type == BlockType::ELSE) {
+                Block& else_block = script[end_block_or_else];
+                int end_if = else_block.jumpToIndex;
+                if(end_if <= end_block_or_else) { i = end_block_or_else + 1; continue; }
+
+                else_block.rect = {current_x, current_y + block.rect.h, 220, 40};
+
+                content_height = 0;
+                if (end_if > end_block_or_else + 1) {
+                    int inner_y = else_block.rect.y + 40;
+                    int inner_x = current_x + 20;
+                    calculateLayout(script, end_block_or_else + 1, end_if, inner_x, inner_y);
+                    content_height = inner_y - (else_block.rect.y + 40);
+                }
+                if (content_height == 0) content_height = 30;
+                else_block.rect.h = 40 + content_height + 10;
+
+                current_y += block.rect.h + else_block.rect.h + BLOCK_SPACING;
+                i = end_if + 1;
+            } else {
+                current_y += block.rect.h + BLOCK_SPACING;
+                i = end_block_or_else + 1;
+            }
+        }
+        else {
+            current_y += block.rect.h + BLOCK_SPACING;
+            i++;
+        }
     }
 }

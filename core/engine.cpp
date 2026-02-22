@@ -178,27 +178,23 @@ void handleKeyDown(SDL_Event& event) {
 
         for (auto& script : activeSprite->scripts) {
             for (int i = 0; i < script.size(); ++i) {
-                // اگر روی یک بلوک IF کلیک شده
                 if (script[i].type == BlockType::IF && SDL_PointInRect(&mouse_point, &script[i].rect)) {
 
-                    // چک کن که آیا این IF از قبل ELSE دارد یا نه
                     int end_if_index = script[i].jumpToIndex;
                     if (end_if_index < script.size() && script[end_if_index].type == BlockType::ELSE) {
                         std::cout << "This IF block already has an ELSE." << std::endl;
                         return;
                     }
 
-                    // --- منطق افزودن ELSE ---
-                    Block else_block = {BlockType::ELSE, {}, ""};
 
-                    // بلوک ELSE را بعد از محتوای داخلی IF، وارد کن
+                    Block else_block = {BlockType::ELSE,BlockCategory::CONTROL, {}, ""};
+
                     script.insert(script.begin() + end_if_index, else_block);
 
-                    // حالا preprocessScript را دوباره فراخوانی کن تا تمام jumpToIndex ها آپدیت شوند
                     preprocessScript(script);
 
                     std::cout << "ELSE block added." << std::endl;
-                    return; // کار تمام شد
+                    return;
                 }
             }
         }
@@ -578,36 +574,53 @@ void handleMouseDown(SDL_Event& event, Engine& engine, SDL_Renderer* renderer) {
         }
     }
 
+    // change category block
+    if (SDL_PointInRect(&mouse_point, &blockPalette.category_menu_rect)) {
+        for (const auto& btn : blockPalette.category_buttons) {
+            if (SDL_PointInRect(&mouse_point, &btn.rect)) {
+                if (blockPalette.selected_category != btn.category) {
+                    blockPalette.selected_category = btn.category;
+                    blockPalette.scroll_offset_y = 0;
+                }
+                return;
+            }
+        }
+    }
     // start a drag operation
     // from block palette
     if (SDL_PointInRect(&mouse_point, &blockPalette.block_panel_rect)) {
+        int current_y = blockPalette.block_panel_rect.y + 20 - blockPalette.scroll_offset_y;
+
         for (auto& template_block : blockPalette.template_blocks) {
-            if (SDL_PointInRect(&mouse_point, &template_block.rect)) {
+            if (template_block.category == blockPalette.selected_category) {
 
-                drag_state.is_dragging = true;
+                SDL_Rect current_block_rect = {
+                        blockPalette.block_panel_rect.x + 10,
+                        current_y,
+                        blockPalette.block_panel_rect.w - 20,
+                        40
+                };
 
-                drag_state.dragged_script.clear();
-                drag_state.dragged_script.push_back(template_block);
+                if (SDL_PointInRect(&mouse_point, &current_block_rect)) {
+                    drag_state.is_dragging = true;
 
-                if (template_block.type == BlockType::REPEAT || template_block.type == BlockType::FOREVER) {
-                    Block end_block = {BlockType::END_REPEAT, {}, ""};
-                    drag_state.dragged_script.push_back(end_block);
+                    template_block.rect = current_block_rect;
+                    drag_state.dragged_script.clear();
+                    drag_state.dragged_script.push_back(template_block);
+
+                    if (template_block.type == BlockType::REPEAT || template_block.type == BlockType::IF) {
+                        Block end_block = { (template_block.type == BlockType::REPEAT ? BlockType::END_REPEAT : BlockType::END_IF), template_block.category, {}, "" };
+                        drag_state.dragged_script.push_back(end_block);
+                    }
+
+                    drag_state.source_sprite_index = -1;
+                    drag_state.source_script_index = -1;
+                    drag_state.offset_x = m_x - current_block_rect.x;
+                    drag_state.offset_y = m_y - current_block_rect.y;
+
+                    return;
                 }
-                else if (template_block.type == BlockType::IF) {
-                    Block end_block = {BlockType::END_IF, {}, ""};
-                    drag_state.dragged_script.push_back(end_block);
-                }
-
-                drag_state.source_sprite_index = -1;
-                drag_state.source_script_index = -1;
-
-                // the real position
-                drag_state.offset_x = m_x - template_block.rect.x;
-                drag_state.offset_y = m_y - template_block.rect.y;
-
-
-
-                return;
+                current_y += 50;
             }
         }
     }
@@ -1032,15 +1045,15 @@ void initSprites(SDL_Renderer *renderer) {
     if (!sprites.empty()) {
         std::vector<Block> test_script;
 
-        Block b1 = {BlockType::ON_FLAG_CLICKED, {}, ""};
+        Block b1 = {BlockType::ON_FLAG_CLICKED,BlockCategory::EVENTS, {}, ""};
         b1.rect = {350, 100, 220, 40};
         test_script.push_back(b1);
 
-        Block b2 = {BlockType::MOVE, {25}, ""};
+        Block b2 = {BlockType::MOVE,BlockCategory::MOTION, {25}, ""};
         b2.rect = {350, b1.rect.y + b1.rect.h + BLOCK_SPACING, 220, 40};
         test_script.push_back(b2);
 
-        Block b3 = {BlockType::TURN_RIGHT, {90}, ""};
+        Block b3 = {BlockType::TURN_RIGHT,BlockCategory::MOTION, {90}, ""};
         b3.rect = {350, b2.rect.y + b2.rect.h + BLOCK_SPACING, 220, 40};
         test_script.push_back(b3);
 

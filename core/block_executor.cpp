@@ -263,3 +263,21 @@ void updateScript(ScriptState& state, Sprite& sprite, double deltaTime, std::vec
     }
 
 }
+
+double evaluateReporter(const Block& reporter, const Sprite& sprite) {
+    auto getParamValue = [&](int param_index) -> double { /* ... */ };
+
+    switch (reporter.type) {
+        // ... (case های X_POSITION و ...)
+
+
+        case BlockType::GREATER_THAN: {
+            double val1 = getParamValue(0);
+            double val2 = getParamValue(1);
+            return (val1 > val2) ? 1.0 : 0.0;
+        }
+
+        default:
+            return 0.0;
+    }
+}
